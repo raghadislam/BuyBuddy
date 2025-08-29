@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2016", "esnext.asynciterable"] // Support async/await and other features used by Prisma.
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
