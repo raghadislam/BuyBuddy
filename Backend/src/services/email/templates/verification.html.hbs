@@ -1,0 +1,17 @@
+<!-- src/services/email/templates/verification.html.hbs -->
+<div
+  style="font-family: Arial, Helvetica, sans-serif; color: #111; line-height: 1.4;"
+>
+  <h3 style="margin:0 0 8px 0">Your verification code</h3>
+  <p style="margin:0 0 12px 0">Use the code below to complete verification. It
+    will expire in
+    {{ttlMinutes}}
+    minutes.</p>
+  <div
+    style="display:inline-block;padding:12px 18px;border-radius:8px;background:#f7f7f8;font-weight:700;font-size:24px;letter-spacing:2px;"
+  >
+    {{code}}
+  </div>
+  <p style="margin:16px 0 0 0;color:#666;font-size:13px">If you didn't request
+    this, you can safely ignore this email.</p>
+</div>
