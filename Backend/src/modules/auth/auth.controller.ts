@@ -16,3 +16,20 @@ export const signup: RequestHandler = async (req, res) => {
     },
   });
 };
+
+export const verfyEmail: RequestHandler = async (req, res) => {
+  const payload: IVerfiyEmail = req.body;
+  const { user, accessToken, refreshToken } = await AuthService.verfyEmail(
+    payload
+  );
+
+  sendCookie(res, refreshToken);
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Email verified successfully.",
+    data: {
+      user,
+      accessToken,
+    },
+  });
+};
