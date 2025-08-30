@@ -1,0 +1,40 @@
+import { z } from "zod";
+
+import { Role } from "../../enums/role.enum";
+
+export const signupZodSchema = z.object({
+  body: z
+    .object({
+      firstName: z
+        .string()
+        .min(4, "Name should be 4 characters at minimum")
+        .max(20, "Name cannot be more than 20 charcters"),
+
+      lastName: z
+        .string()
+        .min(4, "Name should be 4 characters at minimum")
+        .max(20, "Name cannot be more than 20 charcters"),
+
+      email: z.string().email({ message: "Invalid email address" }),
+
+      password: z.string().min(6, "password should be more than 6 characters"),
+
+      confirmPassword: z
+        .string()
+        .min(6, "password should be more than 6 characters"),
+
+      role: z.enum([Role.SELLER, Role.USER]),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords don't match",
+      path: ["Password confirmations"],
+    }),
+});
+
+export const verifyEmailZodSchema = z.object({
+  body: z.object({
+    code: z
+      .string()
+      .length(6, "Verification code must be exactly 6 characters"),
+  }),
+});
