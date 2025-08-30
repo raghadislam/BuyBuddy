@@ -19,3 +19,7 @@ export interface IAccessTokenPayload {
 export interface IRefreshTokenPayload {
   id: string;
 }
+
+export interface IVerfiyEmail {
+  code: string;
+}

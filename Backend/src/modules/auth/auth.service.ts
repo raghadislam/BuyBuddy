@@ -75,6 +75,55 @@ class AuthService {
     );
     return user;
   }
+
+  async verfyEmail(payload: IVerfiyEmail) {
+    const hashedCode = crypto
+      .createHash("sha256")
+      .update(payload.code)
+      .digest("hex");
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        verificationCode: hashedCode,
+        verificationCodeExpiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!existingUser) {
+      throw new APIError("Invalid or expired code", 404);
+    }
+
+    const user = await prisma.user.update({
+      where: { email: existingUser.email },
+      data: {
+        status: Status.ACTIVE,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      },
+    });
+
+    if (!user) {
+      throw new APIError("Failed to verify email", 500);
+    }
+
+    const accessToken = generateAccessToken({
+      id: user.id,
+      role: user.role,
+      createdAt: user.createdAt,
+      status: user.status,
+      email: user.email,
+    });
+    const refreshToken = generateRefreshToken({ id: user.id });
+
+    sendAccountVerifiedEmail(user.email, {
+      subject: "Verify your email",
+      firstName: user.firstName,
+    });
+
+    logger.info(
+      `User verified ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
+    );
+    return { user, accessToken, refreshToken };
+  }
 }
 
 export default new AuthService();
