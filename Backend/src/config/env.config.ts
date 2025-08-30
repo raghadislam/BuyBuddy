@@ -40,5 +40,22 @@ export default z
     GMAIL_ACCESS_TOKEN: z.string().optional(),
 
     EMAIL_VERIFICATION_TTL_MINUTES: z.coerce.number().default(10),
+
+    // Auth / JWT settings
+    ACCESS_TOKEN_SECRET: z.string().min(1, "ACCESS_TOKEN_SECRET is required"),
+
+    ACCESS_TOKEN_EXPIRES_IN: z
+      .string()
+      .min(1, "ACCESS_TOKEN_EXPIRES_IN is required"),
+
+    REFRESH_TOKEN_SECRET: z.string().min(1, "REFRESH_TOKEN_SECRET is required"),
+
+    REFRESH_TOKEN_EXPIRES_IN: z
+      .string()
+      .min(1, "REFRESH_TOKEN_EXPIRES_IN is required"),
+
+    JWT_COOKIE_EXPIRES_IN: z.coerce.number(),
+
+    APP_NAME: z.string().min(1, `PP_NAME is required`),
   })
   .parse(process.env);
