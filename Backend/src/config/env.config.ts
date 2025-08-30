@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { config } from "dotenv";
 
-config({ quiet: true });
+config({ path: "./.env", quiet: true });
 
 export default z
   .object({
@@ -19,5 +19,26 @@ export default z
       .refine((val) => /^postgres(ql)?:\/\//i.test(val), {
         message: "DATABASE_URL must be a PostgreSQL connection string",
       }),
+
+    EMAIL_FROM: z.string().min(3),
+    TEMPLATES_PATH: z.string().default("src/services/email/templates"),
+
+    SMTP_URL: z.string().optional(),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+
+    // Gmail simple (App Password)
+    GMAIL_USER: z.string().optional(),
+    GMAIL_PASSWORD: z.string().optional(),
+
+    // Gmail OAuth2
+    GMAIL_CLIENT_ID: z.string().optional(),
+    GMAIL_CLIENT_SECRET: z.string().optional(),
+    GMAIL_REFRESH_TOKEN: z.string().optional(),
+    GMAIL_ACCESS_TOKEN: z.string().optional(),
+
+    EMAIL_VERIFICATION_TTL_MINUTES: z.coerce.number().default(10),
   })
   .parse(process.env);

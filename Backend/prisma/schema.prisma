@@ -23,13 +23,23 @@ enum Role {
   GUEST
 }
 
+enum Status {
+  UNVERIFIED
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
 model User {
-  id        String   @id @default(uuid())
-  firstName String
-  lastName  String
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                        String    @id @default(uuid())
+  firstName                 String
+  lastName                  String
+  email                     String    @unique
+  password                  String
+  role                      Role      @default(USER)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  status                    Status    @default(UNVERIFIED)
+  verificationCode          String?
+  verificationCodeExpiresAt DateTime?
 }

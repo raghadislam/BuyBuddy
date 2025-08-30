@@ -1,7 +1,10 @@
+import crypto from "crypto";
+
 import { SendMailOptions } from "./interface";
 import { createMailProvider } from "./adapter";
 import env from "../../config/env.config";
 import { renderTemplate } from "./templates";
+import prisma from "../../config/prisma.config";
 
 const provider = createMailProvider();
 
@@ -22,7 +25,16 @@ export async function sendVerificationCode(
 ): Promise<VerificationResult> {
   const ttl = env.EMAIL_VERIFICATION_TTL_MINUTES;
   const code = generateNumericCode(6);
+  const hashed = crypto.createHash("sha256").update(code).digest("hex");
   const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
+
+  prisma.user.update({
+    where: { email: to },
+    data: {
+      verificationCode: code,
+      verificationCodeExpiresAt: expiresAt,
+    },
+  });
 
   const subject = options?.subject ?? "Your verification code";
   const text = `Your verification code is: ${code}\nThis code will expire in ${ttl} minutes.`;
