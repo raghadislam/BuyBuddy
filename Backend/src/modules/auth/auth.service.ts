@@ -1,10 +1,19 @@
-import { ISignupPayload } from "./auth.interface";
+import crypto from "crypto";
+
+import { ISignupPayload, IVerfiyEmail } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status } from "../../enums/status.enum";
-import { sendVerificationCode } from "../../services/email/send";
+import {
+  sendVerificationCode,
+  sendAccountVerifiedEmail,
+} from "../../services/email/send";
 import { hashPassword } from "../../utils/functions/hash";
-
+import logger from "../../config/logger.config";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../services/auth/token.service";
 class AuthService {
   async signup(payload: ISignupPayload) {
     // Check if user already exists
@@ -18,7 +27,7 @@ class AuthService {
         sendVerificationCode(existingUser.email, {
           subject: "Activate your account",
         });
-        return;
+        return existingUser;
       }
 
       // Resend verification code if unverified
@@ -26,7 +35,7 @@ class AuthService {
         sendVerificationCode(existingUser.email, {
           subject: "Verify your email",
         });
-        return;
+        return existingUser;
       }
 
       // Handle suspended accounts
@@ -60,7 +69,11 @@ class AuthService {
 
     // Send verification code
     sendVerificationCode(user.email, { subject: "Verify your email" });
-    return;
+
+    logger.info(
+      `New user registered ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
+    );
+    return user;
   }
 }
 
