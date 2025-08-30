@@ -8,6 +8,6 @@ const router = express.Router();
 
 router.post("/signup", validate(signupZodSchema), signup);
 
-router.get("/verify-email", validate(verifyEmailZodSchema), verfyEmail);
+router.post("/verify-email", validate(verifyEmailZodSchema), verfyEmail);
 
 export default router;

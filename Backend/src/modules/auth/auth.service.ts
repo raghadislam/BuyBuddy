@@ -77,10 +77,14 @@ class AuthService {
   }
 
   async verfyEmail(payload: IVerfiyEmail) {
+    // Hash the provided verification code so it can be compared with the hashed code stored in the database.
     const hashedCode = crypto
       .createHash("sha256")
       .update(payload.code)
       .digest("hex");
+
+    // Find a user that has this verification code and whose code hasn't expired.
+    // This ensures the code is both valid and still within the TTL.
     const existingUser = await prisma.user.findFirst({
       where: {
         verificationCode: hashedCode,
@@ -88,10 +92,12 @@ class AuthService {
       },
     });
 
+    // If no matching user is found, the code is invalid or expired.
     if (!existingUser) {
       throw new APIError("Invalid or expired code", 404);
     }
 
+    // Update the user's status to ACTIVE and clear the verification fields.
     const user = await prisma.user.update({
       where: { email: existingUser.email },
       data: {
@@ -101,6 +107,7 @@ class AuthService {
       },
     });
 
+    // If the update failed for some reason, throw an error.
     if (!user) {
       throw new APIError("Failed to verify email", 500);
     }
@@ -114,6 +121,7 @@ class AuthService {
     });
     const refreshToken = generateRefreshToken({ id: user.id });
 
+    // Notify the user that their account has been verified.
     sendAccountVerifiedEmail(user.email, {
       subject: "Verify your email",
       firstName: user.firstName,
