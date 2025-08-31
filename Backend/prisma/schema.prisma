@@ -30,16 +30,39 @@ enum Status {
   INACTIVE
 }
 
+enum RevokedReason {
+  USER_LOGOUT
+  EXPIRED
+  ADMIN_REVOKED
+  PASSWORD_CHANGE
+  OTHER
+}
+
 model User {
-  id                        String    @id @default(uuid())
+  id                        String         @id @default(uuid())
   firstName                 String
   lastName                  String
-  email                     String    @unique
+  email                     String         @unique
   password                  String
-  role                      Role      @default(USER)
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
-  status                    Status    @default(UNVERIFIED)
+  role                      Role           @default(USER)
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  status                    Status         @default(UNVERIFIED)
   verificationCode          String?
   verificationCodeExpiresAt DateTime?
+  RefreshToken              RefreshToken[]
+}
+
+model RefreshToken {
+  id            String         @id @default(uuid())
+  token         String
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  expiresAt     DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  revokedAt     DateTime?
+  revokedReason RevokedReason?
+
+  @@index([expiresAt])
 }
