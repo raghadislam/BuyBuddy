@@ -48,3 +48,17 @@ export const login: RequestHandler = async (req, res) => {
     accessToken,
   });
 };
+
+export const refresh: RequestHandler = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  const { user, accessToken } = await AuthService.refresh({ refreshToken });
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Token refreshed successfully.",
+    data: {
+      user,
+    },
+    accessToken,
+  });
+};

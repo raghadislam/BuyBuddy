@@ -1,6 +1,6 @@
 import express from "express";
 
-import { signup, verfyEmail, login } from "./auth.controller";
+import { signup, verfyEmail, login, refresh } from "./auth.controller";
 import { validate } from "../../middlewares/validation.middleware";
 import {
   signupZodSchema,
@@ -15,5 +15,7 @@ router.post("/signup", validate(signupZodSchema), signup);
 router.post("/verify-email", validate(verifyEmailZodSchema), verfyEmail);
 
 router.post("/login", validate(loginZodSchema), login);
+
+router.post("/refresh", refresh);
 
 export default router;
