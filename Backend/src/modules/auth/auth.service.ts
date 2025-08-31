@@ -10,10 +10,7 @@ import {
 } from "../../services/email/send";
 import { hashPassword, comparePassword } from "../../utils/functions/hash";
 import logger from "../../config/logger.config";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from "../../services/auth/token.service";
+import { generateAccessToken, generateRefreshToken } from "./token.service";
 class AuthService {
   async signup(payload: ISignupPayload) {
     // Check if user already exists
