@@ -1,6 +1,11 @@
 import { RequestHandler } from "express";
 
-import { ISignupPayload, IVerfiyEmail, ILoginPayload } from "./auth.interface";
+import {
+  ISignupPayload,
+  IVerfiyEmail,
+  ILoginPayload,
+  IForgetPasswordPayload,
+} from "./auth.interface";
 import AuthService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
 
@@ -71,5 +76,15 @@ export const logout: RequestHandler = async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     message: "Logout successful.",
+  });
+};
+
+export const forgetPassword: RequestHandler = async (req, res) => {
+  const payload: IForgetPasswordPayload = req.body;
+  await AuthService.forgetPassword(payload);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Password reset code has been sent.",
   });
 };
