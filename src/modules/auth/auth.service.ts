@@ -1,3 +1,4 @@
+import env from "../../config/env.config";
 import {
   ISignupPayload,
   IVerfiyEmail,
@@ -25,6 +26,29 @@ import { userSafeSelect, userLoginSelect } from "../user/user.select";
 import { generateNumericCode, hashCode, compareCode } from "./code.util";
 
 class AuthService {
+  private async generateAndSendVerificationCode(
+    subject: string,
+    email: string
+  ) {
+    const code = generateNumericCode();
+    const hashed = await hashCode(code);
+
+    const ttl = env.EMAIL_VERIFICATION_TTL_MINUTES;
+    const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        verificationCode: hashed,
+        verificationCodeExpiresAt: expiresAt,
+      },
+    });
+
+    sendVerificationCode(email, code, {
+      subject,
+    });
+  }
+
   async signup(payload: ISignupPayload) {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -35,23 +59,21 @@ class AuthService {
     if (existingUser) {
       // Reactivate account if inactive
       if (existingUser.status === Status.INACTIVE) {
-        const code = generateNumericCode();
-        const hashed = await hashCode(code);
+        this.generateAndSendVerificationCode(
+          "Activate your account",
+          existingUser.email
+        );
 
-        sendVerificationCode(existingUser.email, code, hashed, {
-          subject: "Activate your account",
-        });
         return existingUser;
       }
 
       // Resend verification code if unverified
       if (existingUser.status === Status.UNVERIFIED) {
-        const code = generateNumericCode();
-        const hashed = await hashCode(code);
+        this.generateAndSendVerificationCode(
+          "Verify your email",
+          existingUser.email
+        );
 
-        sendVerificationCode(existingUser.email, code, hashed, {
-          subject: "Verify your email",
-        });
         return existingUser;
       }
 
@@ -89,9 +111,7 @@ class AuthService {
     const hashed = await hashCode(code);
 
     // Send verification code
-    sendVerificationCode(user.email, code, hashed, {
-      subject: "Verify your email",
-    });
+    this.generateAndSendVerificationCode("Verify your email", user.email);
 
     logger.info(
       `New user registered ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
@@ -198,23 +218,15 @@ class AuthService {
 
     // If user has not verified their email, resend verification code and block login
     if (user.status === Status.UNVERIFIED) {
-      const code = generateNumericCode();
-      const hashed = await hashCode(code);
+      this.generateAndSendVerificationCode("Verify your email", user.email);
 
-      sendVerificationCode(user.email, code, hashed, {
-        subject: "Verify your email",
-      });
       throw new APIError("Please verify your email to continue", 403);
     }
 
     // If user is inactive, resend activation code and block login
     if (user.status === Status.INACTIVE) {
-      const code = generateNumericCode();
-      const hashed = await hashCode(code);
+      this.generateAndSendVerificationCode("Activate your account", user.email);
 
-      sendVerificationCode(user.email, code, hashed, {
-        subject: "Activate your account",
-      });
       throw new APIError(
         "Your account is inactive. Please check your email to activate your account.",
         403
@@ -281,12 +293,8 @@ class AuthService {
 
     // Check if user is unverified
     if (user.status === Status.UNVERIFIED) {
-      const code = generateNumericCode();
-      const hashed = await hashCode(code);
+      this.generateAndSendVerificationCode("Verify your email", user.email);
 
-      sendVerificationCode(user.email, code, hashed, {
-        subject: "Verify your email",
-      });
       throw new APIError("Please verify your email to continue", 403);
     }
 
