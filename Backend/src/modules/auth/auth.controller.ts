@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 
-import { ISignupPayload, IVerfiyEmail } from "./auth.interface";
+import { ISignupPayload, IVerfiyEmail, ILoginPayload } from "./auth.interface";
 import AuthService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
 
@@ -29,7 +29,22 @@ export const verfyEmail: RequestHandler = async (req, res) => {
     message: "Email verified successfully.",
     data: {
       user,
-      accessToken,
     },
+    accessToken,
+  });
+};
+
+export const login: RequestHandler = async (req, res) => {
+  const payload: ILoginPayload = req.body;
+  const { user, accessToken, refreshToken } = await AuthService.login(payload);
+
+  sendCookie(res, refreshToken);
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Login successful.",
+    data: {
+      user,
+    },
+    accessToken,
   });
 };
