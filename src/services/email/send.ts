@@ -106,3 +106,36 @@ export async function sendPasswordResetCode(
   await provider.sendMail(mailOpts);
   return;
 }
+
+export async function sendPasswordResetConfirmation(
+  to: string,
+  options?: {
+    subject?: string;
+    firstName?: string;
+  }
+): Promise<void> {
+  const subject = options?.subject ?? "Your password has been changed";
+  const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+  const year = new Date().getFullYear();
+
+  const text = `Your password for ${
+    env.APP_NAME ?? "Our App"
+  } was changed on ${time}.\nIf you made this change, no further action is required.\nIf you didn't make this change, please reset your password immediately or contact support at \n"support@example.com"\n}.`;
+
+  const html = await renderTemplate("passwordResetConfirmation", {
+    firstName: options?.firstName ?? null,
+    appName: env.APP_NAME ?? "Our App",
+    time,
+    year,
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
+}
