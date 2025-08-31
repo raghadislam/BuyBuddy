@@ -11,6 +11,7 @@ export interface ISignupPayload {
 }
 export interface IVerfiyEmail {
   code: string;
+  email: string;
 }
 
 export interface ILoginPayload {

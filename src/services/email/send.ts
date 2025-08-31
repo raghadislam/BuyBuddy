@@ -8,32 +8,19 @@ import prisma from "../../config/prisma.config";
 
 const provider = createMailProvider();
 
-function generateNumericCode(length: number): string {
-  const max = 10 ** length;
-  const n = Math.floor(Math.random() * max)
-    .toString()
-    .padStart(length, "0");
-  return n;
-}
-
 export async function sendEmail(opts: SendMailOptions) {
   await provider.sendMail(opts);
 }
 
-export type VerificationResult = {
-  code: string;
-  expiresAt: Date;
-};
-
 export async function sendVerificationCode(
   to: string,
+  code: string,
+  hashed: string,
   options?: {
     subject?: string;
   }
-): Promise<VerificationResult> {
+): Promise<void> {
   const ttl = env.EMAIL_VERIFICATION_TTL_MINUTES;
-  const code = generateNumericCode(6);
-  const hashed = crypto.createHash("sha256").update(code).digest("hex");
   const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
 
   await prisma.user.update({
@@ -61,7 +48,7 @@ export async function sendVerificationCode(
 
   await provider.sendMail(mailOpts);
 
-  return { code, expiresAt };
+  return;
 }
 
 export async function sendAccountVerifiedEmail(

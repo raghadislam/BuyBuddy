@@ -33,6 +33,8 @@ export const signupZodSchema = z.object({
 
 export const verifyEmailZodSchema = z.object({
   body: z.object({
+    email: z.string().email({ message: "Invalid email address" }),
+
     code: z
       .string()
       .length(6, "Verification code must be exactly 6 characters"),
