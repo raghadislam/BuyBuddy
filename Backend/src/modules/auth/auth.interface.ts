@@ -1,3 +1,5 @@
+import { JwtPayload } from "jsonwebtoken";
+
 import { Role, Status } from "../../generated/prisma";
 
 export interface ISignupPayload {
@@ -26,4 +28,8 @@ export interface IAccessTokenPayload {
 
 export interface IRefreshTokenPayload {
   id: string;
+}
+
+export interface IRefreshPayload {
+  refreshToken: string;
 }

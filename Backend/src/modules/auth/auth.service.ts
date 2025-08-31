@@ -1,6 +1,12 @@
 import crypto from "crypto";
 
-import { ISignupPayload, IVerfiyEmail, ILoginPayload } from "./auth.interface";
+import {
+  ISignupPayload,
+  IVerfiyEmail,
+  ILoginPayload,
+  IRefreshPayload,
+  IRefreshTokenPayload,
+} from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status } from "../../enums/status.enum";
@@ -10,7 +16,12 @@ import {
 } from "../../services/email/send";
 import { hashPassword, comparePassword } from "../../utils/functions/hash";
 import logger from "../../config/logger.config";
-import { generateAccessToken, generateRefreshToken } from "./token.service";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "./token.service";
+
 class AuthService {
   async signup(payload: ISignupPayload) {
     // Check if user already exists
@@ -181,6 +192,57 @@ class AuthService {
       `User logged in ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
     );
     return { user, accessToken, refreshToken };
+  }
+
+  async refresh(payload: IRefreshPayload) {
+    const { refreshToken } = payload;
+    const decoded = await verifyRefreshToken(refreshToken);
+
+    if (!decoded) {
+      throw new APIError("Invalid refresh token", 401);
+    }
+
+    // Find user by ID
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
+
+    // Ensure the user exists before proceeding with token refresh
+    if (!user) {
+      throw new APIError("User not found", 403);
+    }
+
+    // Check if user exists and is not suspended before refreshing token
+    if (user.status === Status.SUSPENDED) {
+      throw new APIError(
+        "Your account has been suspended. Please contact support.",
+        403
+      );
+    }
+
+    // check if user is inactive
+    if (user.status === Status.INACTIVE) {
+      throw new APIError("User is not active", 403);
+    }
+
+    // Check if user is unverified
+    if (user.status === Status.UNVERIFIED) {
+      sendVerificationCode(user.email, { subject: "Verify your email" });
+      throw new APIError("Please verify your email to continue", 403);
+    }
+
+    const accessToken = generateAccessToken({
+      id: user.id,
+      role: user.role,
+      createdAt: user.createdAt,
+      status: user.status,
+      email: user.email,
+    });
+
+    logger.info(
+      `Token refreshed for user ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
+    );
+    return { user, accessToken };
   }
 }
 
