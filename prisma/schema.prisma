@@ -39,18 +39,20 @@ enum RevokedReason {
 }
 
 model User {
-  id                        String         @id @default(uuid())
-  firstName                 String
-  lastName                  String
-  email                     String         @unique
-  password                  String
-  role                      Role           @default(USER)
-  createdAt                 DateTime       @default(now())
-  updatedAt                 DateTime       @updatedAt
-  status                    Status         @default(UNVERIFIED)
-  verificationCode          String?
-  verificationCodeExpiresAt DateTime?
-  RefreshToken              RefreshToken[]
+  id                         String         @id @default(uuid())
+  firstName                  String
+  lastName                   String
+  email                      String         @unique
+  password                   String
+  role                       Role           @default(USER)
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+  status                     Status         @default(UNVERIFIED)
+  verificationCode           String?
+  verificationCodeExpiresAt  DateTime?
+  passwordResetCode          String?
+  passwordResetCodeExpiresAt DateTime?
+  RefreshToken               RefreshToken[]
 }
 
 model RefreshToken {
