@@ -42,3 +42,9 @@ export interface ILogoutPayload {
 export interface IForgetPasswordPayload {
   email: string;
 }
+
+export interface IResetPasswordPayload {
+  code: string;
+  newPassword: string;
+  email: string;
+}

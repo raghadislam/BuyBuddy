@@ -6,6 +6,7 @@ import {
   IRefreshPayload,
   ILogoutPayload,
   IForgetPasswordPayload,
+  IResetPasswordPayload,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
@@ -15,6 +16,7 @@ import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
   sendPasswordResetCode,
+  sendPasswordResetConfirmation,
 } from "../../services/email/send";
 import { hashPassword, comparePassword } from "../../utils/functions/hash";
 import logger from "../../config/logger.config";
@@ -46,7 +48,7 @@ class AuthService {
       },
     });
 
-    sendVerificationCode(email, code, {
+    await sendVerificationCode(email, code, {
       subject,
     });
   }
@@ -69,7 +71,7 @@ class AuthService {
       },
     });
 
-    sendPasswordResetCode(email, code, {
+    await sendPasswordResetCode(email, code, {
       subject,
     });
   }
@@ -211,7 +213,7 @@ class AuthService {
     const refreshToken = await generateRefreshToken({ id: user.id });
 
     // Send email notification that account has been verified
-    sendAccountVerifiedEmail(user.email, {
+    await sendAccountVerifiedEmail(user.email, {
       subject: "Verify your email",
       firstName: user.firstName,
     });
@@ -367,7 +369,7 @@ class AuthService {
 
     // If no user found, return 404 (email does not exist)
     if (!user) {
-      throw new APIError("Invalid email", 404);
+      throw new APIError("No account found with this email address.", 404);
     }
 
     // Send reset password code
@@ -380,6 +382,110 @@ class AuthService {
       `Password reset code sent to user ID: ${user.id}, email: ${user.email}`
     );
     return;
+  }
+
+  async resetPassword(payload: IResetPasswordPayload) {
+    const { code, newPassword, email } = payload;
+
+    // Find user with password reset fields only
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        passwordResetCode: true,
+        passwordResetCodeExpiresAt: true,
+      },
+    });
+
+    // If no user found, return 404
+    if (!existingUser) {
+      throw new APIError("No account found with this email address.", 404);
+    }
+
+    // If no reset code is stored, ask user to request a new one
+    if (!existingUser.passwordResetCode) {
+      throw new APIError(
+        "No reset code found. Please request a new password reset.",
+        400
+      );
+    }
+
+    // Check if reset code has expired
+    if (
+      !existingUser.passwordResetCodeExpiresAt ||
+      existingUser.passwordResetCodeExpiresAt <= new Date()
+    ) {
+      throw new APIError(
+        "Your reset code has expired. Please request a new one.",
+        400
+      );
+    }
+
+    // Validate provided code against stored hashed code
+    const ok = await compareCode(code, existingUser.passwordResetCode);
+    if (!ok) {
+      throw new APIError(
+        "The reset code you entered is invalid. Please try again or request a new one.",
+        400
+      );
+    }
+
+    // Hash the new password before storing
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update user: clear reset fields, set new password, ensure ACTIVE status
+    const user = await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        status: Status.ACTIVE,
+        passwordResetCode: null,
+        passwordResetCodeExpiresAt: null,
+      },
+      select: userSafeSelect,
+    });
+
+    if (!user) {
+      throw new APIError(
+        "Something went wrong while resetting your password. Please try again.",
+        500
+      );
+    }
+
+    // Revoke all previous refresh tokens for security after password change
+    await prisma.refreshToken.updateMany({
+      where: {
+        userId: user.id,
+        revokedReason: null,
+      },
+      data: {
+        revokedReason: RevokedReason.PASSWORD_CHANGE,
+      },
+    });
+
+    // Generate fresh tokens
+    const accessToken = generateAccessToken({
+      id: user.id,
+      role: user.role,
+      createdAt: user.createdAt,
+      status: user.status,
+      email: user.email,
+    });
+    const refreshToken = await generateRefreshToken({ id: user.id });
+
+    // Send confirmation email
+    await sendPasswordResetConfirmation(user.email, {
+      subject: "Your password has been reset successfully",
+      firstName: user.firstName,
+    });
+
+    logger.info(
+      `Password successfully reset for user ID: ${user.id}, email: ${user.email}`
+    );
+
+    return { accessToken, refreshToken };
   }
 }
 
