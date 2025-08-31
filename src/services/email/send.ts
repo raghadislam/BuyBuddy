@@ -78,3 +78,31 @@ The ${env.APP_NAME ?? "App"} Team
 
   await sendEmail(mailOpts);
 }
+
+export async function sendPasswordResetCode(
+  to: string,
+  code: string,
+  options?: { subject?: string }
+): Promise<void> {
+  const ttl =
+    env.PASSWORD_RESET_TTL_MINUTES ?? env.EMAIL_VERIFICATION_TTL_MINUTES ?? 15;
+  const subject = options?.subject ?? "Reset your password";
+  const text = `You requested to reset your password. Use this code to reset it: ${code}\nThis code expires in ${ttl} minutes.\nIf you didn't request this, ignore this email.`;
+
+  const html = await renderTemplate("passwordReset", {
+    code,
+    ttlMinutes: ttl,
+    appName: env.APP_NAME ?? "Our App",
+    time: new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
+}
