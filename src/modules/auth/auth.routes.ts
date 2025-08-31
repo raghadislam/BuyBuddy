@@ -7,6 +7,7 @@ import {
   refresh,
   logout,
   forgetPassword,
+  resetPassword,
 } from "./auth.controller";
 import { validate } from "../../middlewares/validation.middleware";
 import {
@@ -14,6 +15,7 @@ import {
   verifyEmailZodSchema,
   loginZodSchema,
   forgetPasswordZodSchema,
+  resetPasswordZodSchema,
 } from "./auth.validation";
 
 const router = express.Router();
@@ -33,5 +35,7 @@ router.post(
   validate(forgetPasswordZodSchema),
   forgetPassword
 );
+
+router.post("/reset-password", validate(resetPasswordZodSchema), resetPassword);
 
 export default router;

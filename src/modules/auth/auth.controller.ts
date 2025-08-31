@@ -5,6 +5,7 @@ import {
   IVerfiyEmail,
   ILoginPayload,
   IForgetPasswordPayload,
+  IResetPasswordPayload,
 } from "./auth.interface";
 import AuthService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
@@ -86,5 +87,20 @@ export const forgetPassword: RequestHandler = async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     message: "Password reset code has been sent.",
+  });
+};
+
+export const resetPassword: RequestHandler = async (req, res) => {
+  const payload: IResetPasswordPayload = req.body;
+  const { accessToken, refreshToken } = await AuthService.resetPassword(
+    payload
+  );
+
+  sendCookie(res, refreshToken);
+  sendResponse(res, {
+    statusCode: 200,
+    message:
+      "Your password has been reset successfully. You are now signed in on this device. For security reasons, all other sessions have been logged out.",
+    accessToken,
   });
 };
