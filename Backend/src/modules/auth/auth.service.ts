@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { ISignupPayload, IVerfiyEmail } from "./auth.interface";
+import { ISignupPayload, IVerfiyEmail, ILoginPayload } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status } from "../../enums/status.enum";
@@ -8,7 +8,7 @@ import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
 } from "../../services/email/send";
-import { hashPassword } from "../../utils/functions/hash";
+import { hashPassword, comparePassword } from "../../utils/functions/hash";
 import logger from "../../config/logger.config";
 import {
   generateAccessToken,
@@ -129,6 +129,59 @@ class AuthService {
 
     logger.info(
       `User verified ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
+    );
+    return { user, accessToken, refreshToken };
+  }
+
+  async login(payload: ILoginPayload) {
+    const { email, password } = payload;
+
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    // If no user found or password does not match, throw error
+    if (!user || !(await comparePassword(password, user.password))) {
+      throw new APIError("Invalid email or password", 401);
+    }
+
+    // If user has not verified their email, resend verification code and block login
+    if (user.status === Status.UNVERIFIED) {
+      sendVerificationCode(user.email, { subject: "Verify your email" });
+      throw new APIError("Please verify your email to continue", 403);
+    }
+
+    // If user is inactive, resend activation code and block login
+    if (user.status === Status.INACTIVE) {
+      sendVerificationCode(user.email, { subject: "Activate your account" });
+      throw new APIError(
+        "Your account is inactive. Please check your email to activate your account.",
+        403
+      );
+    }
+
+    // If user is suspended, block login
+    if (user.status === Status.SUSPENDED) {
+      throw new APIError(
+        "Your account has been suspended. Please contact support.",
+        403
+      );
+    }
+
+    const accessToken = generateAccessToken({
+      id: user.id,
+      role: user.role,
+      createdAt: user.createdAt,
+      status: user.status,
+      email: user.email,
+    });
+    const refreshToken = generateRefreshToken({ id: user.id });
+
+    logger.info(
+      `User logged in ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
     );
     return { user, accessToken, refreshToken };
   }

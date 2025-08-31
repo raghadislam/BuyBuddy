@@ -7,6 +7,14 @@ export interface ISignupPayload {
   password: string;
   role: Extract<Role, "USER" | "SELLER">;
 }
+export interface IVerfiyEmail {
+  code: string;
+}
+
+export interface ILoginPayload {
+  email: string;
+  password: string;
+}
 
 export interface IAccessTokenPayload {
   id: string;
@@ -18,8 +26,4 @@ export interface IAccessTokenPayload {
 
 export interface IRefreshTokenPayload {
   id: string;
-}
-
-export interface IVerfiyEmail {
-  code: string;
 }
