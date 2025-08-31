@@ -38,3 +38,7 @@ export interface IRefreshPayload {
 export interface ILogoutPayload {
   refreshToken: string;
 }
+
+export interface IForgetPasswordPayload {
+  email: string;
+}

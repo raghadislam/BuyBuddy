@@ -40,6 +40,7 @@ export default z
     GMAIL_ACCESS_TOKEN: z.string().optional(),
 
     EMAIL_VERIFICATION_TTL_MINUTES: z.coerce.number().default(10),
+    PASSWORD_RESET_TTL_MINUTES: z.coerce.number().default(10),
 
     // Auth / JWT settings
     ACCESS_TOKEN_SECRET: z.string().min(1, "ACCESS_TOKEN_SECRET is required"),

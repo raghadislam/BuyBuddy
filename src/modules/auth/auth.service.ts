@@ -5,6 +5,7 @@ import {
   ILoginPayload,
   IRefreshPayload,
   ILogoutPayload,
+  IForgetPasswordPayload,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
@@ -13,6 +14,7 @@ import { RevokedReason } from "../../generated/prisma";
 import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
+  sendPasswordResetCode,
 } from "../../services/email/send";
 import { hashPassword, comparePassword } from "../../utils/functions/hash";
 import logger from "../../config/logger.config";
@@ -49,6 +51,29 @@ class AuthService {
     });
   }
 
+  private async generateAndSendPasswordResetCode(
+    subject: string,
+    email: string
+  ) {
+    const code = generateNumericCode();
+    const hashed = await hashCode(code);
+
+    const ttl = env.PASSWORD_RESET_TTL_MINUTES;
+    const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        passwordResetCode: hashed,
+        passwordResetCodeExpiresAt: expiresAt,
+      },
+    });
+
+    sendPasswordResetCode(email, code, {
+      subject,
+    });
+  }
+
   async signup(payload: ISignupPayload) {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -59,7 +84,7 @@ class AuthService {
     if (existingUser) {
       // Reactivate account if inactive
       if (existingUser.status === Status.INACTIVE) {
-        this.generateAndSendVerificationCode(
+        await this.generateAndSendVerificationCode(
           "Activate your account",
           existingUser.email
         );
@@ -69,7 +94,7 @@ class AuthService {
 
       // Resend verification code if unverified
       if (existingUser.status === Status.UNVERIFIED) {
-        this.generateAndSendVerificationCode(
+        await this.generateAndSendVerificationCode(
           "Verify your email",
           existingUser.email
         );
@@ -111,7 +136,7 @@ class AuthService {
     const hashed = await hashCode(code);
 
     // Send verification code
-    this.generateAndSendVerificationCode("Verify your email", user.email);
+    await this.generateAndSendVerificationCode("Verify your email", user.email);
 
     logger.info(
       `New user registered ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
@@ -218,14 +243,20 @@ class AuthService {
 
     // If user has not verified their email, resend verification code and block login
     if (user.status === Status.UNVERIFIED) {
-      this.generateAndSendVerificationCode("Verify your email", user.email);
+      await this.generateAndSendVerificationCode(
+        "Verify your email",
+        user.email
+      );
 
       throw new APIError("Please verify your email to continue", 403);
     }
 
     // If user is inactive, resend activation code and block login
     if (user.status === Status.INACTIVE) {
-      this.generateAndSendVerificationCode("Activate your account", user.email);
+      await this.generateAndSendVerificationCode(
+        "Activate your account",
+        user.email
+      );
 
       throw new APIError(
         "Your account is inactive. Please check your email to activate your account.",
@@ -293,7 +324,10 @@ class AuthService {
 
     // Check if user is unverified
     if (user.status === Status.UNVERIFIED) {
-      this.generateAndSendVerificationCode("Verify your email", user.email);
+      await this.generateAndSendVerificationCode(
+        "Verify your email",
+        user.email
+      );
 
       throw new APIError("Please verify your email to continue", 403);
     }
@@ -324,6 +358,27 @@ class AuthService {
     });
 
     logger.info(`Refresh token revoked for logout: ${hashed}`);
+    return;
+  }
+
+  async forgetPassword(payload: IForgetPasswordPayload) {
+    const { email } = payload;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // If no user found, return 404 (email does not exist)
+    if (!user) {
+      throw new APIError("Invalid email", 404);
+    }
+
+    // Send reset password code
+    await this.generateAndSendPasswordResetCode(
+      "Your password reset code",
+      email
+    );
+
+    logger.info(
+      `Password reset code sent to user ID: ${user.id}, email: ${user.email}`
+    );
     return;
   }
 }
