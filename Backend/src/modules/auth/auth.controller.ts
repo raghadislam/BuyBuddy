@@ -62,3 +62,14 @@ export const refresh: RequestHandler = async (req, res) => {
     accessToken,
   });
 };
+
+export const logout: RequestHandler = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  await AuthService.logout({ refreshToken });
+
+  res.clearCookie("refreshToken");
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Logout successful.",
+  });
+};
