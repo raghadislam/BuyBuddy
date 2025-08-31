@@ -5,11 +5,12 @@ import {
   IVerfiyEmail,
   ILoginPayload,
   IRefreshPayload,
-  IRefreshTokenPayload,
+  ILogoutPayload,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status } from "../../enums/status.enum";
+import { RevokedReason } from "../../generated/prisma";
 import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
@@ -20,6 +21,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
+  hashToken,
 } from "./token.service";
 
 class AuthService {
@@ -127,7 +129,7 @@ class AuthService {
       status: user.status,
       email: user.email,
     });
-    const refreshToken = generateRefreshToken({ id: user.id });
+    const refreshToken = await generateRefreshToken({ id: user.id });
 
     // Notify the user that their account has been verified.
     sendAccountVerifiedEmail(user.email, {
@@ -186,7 +188,7 @@ class AuthService {
       status: user.status,
       email: user.email,
     });
-    const refreshToken = generateRefreshToken({ id: user.id });
+    const refreshToken = await generateRefreshToken({ id: user.id });
 
     logger.info(
       `User logged in ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
@@ -243,6 +245,21 @@ class AuthService {
       `Token refreshed for user ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
     );
     return { user, accessToken };
+  }
+
+  async logout(payload: ILogoutPayload) {
+    const { refreshToken } = payload;
+    // Hash the refresh token for secure comparison in the database
+    const hashed = hashToken(refreshToken);
+
+    // Revoke the refresh token by updating its record in the database
+    await prisma.refreshToken.updateMany({
+      where: { token: hashed, revokedAt: null },
+      data: { revokedAt: new Date(), revokedReason: RevokedReason.USER_LOGOUT },
+    });
+
+    logger.info(`Refresh token revoked for logout: ${hashed}`);
+    return;
   }
 }
 

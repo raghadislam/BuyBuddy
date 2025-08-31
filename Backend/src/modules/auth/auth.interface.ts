@@ -33,3 +33,7 @@ export interface IRefreshTokenPayload {
 export interface IRefreshPayload {
   refreshToken: string;
 }
+
+export interface ILogoutPayload {
+  refreshToken: string;
+}
