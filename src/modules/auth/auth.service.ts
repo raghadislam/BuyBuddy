@@ -23,6 +23,7 @@ import {
   verifyRefreshToken,
   hashToken,
 } from "./token.service";
+import { userSafeSelect, userLoginSelect } from "../user/user.select";
 
 class AuthService {
   async signup(payload: ISignupPayload) {
@@ -71,6 +72,7 @@ class AuthService {
         status: Status.UNVERIFIED,
         role: payload.role,
       },
+      select: userSafeSelect,
     });
 
     if (!user) {
@@ -115,6 +117,7 @@ class AuthService {
         verificationCode: null,
         verificationCodeExpiresAt: null,
       },
+      select: userSafeSelect,
     });
 
     // If the update failed for some reason, throw an error.
@@ -151,6 +154,7 @@ class AuthService {
       where: {
         email,
       },
+      select: userLoginSelect,
     });
 
     // If no user found or password does not match, throw error
@@ -190,10 +194,13 @@ class AuthService {
     });
     const refreshToken = await generateRefreshToken({ id: user.id });
 
+    // Exclude the password field from the user object and keep the rest as safeUser
+    const { password: _, ...safeUser } = user;
+
     logger.info(
       `User logged in ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
     );
-    return { user, accessToken, refreshToken };
+    return { user: safeUser, accessToken, refreshToken };
   }
 
   async refresh(payload: IRefreshPayload) {
@@ -207,6 +214,7 @@ class AuthService {
     // Find user by ID
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
+      select: userSafeSelect,
     });
 
     // Ensure the user exists before proceeding with token refresh
