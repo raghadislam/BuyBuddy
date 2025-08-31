@@ -2,7 +2,7 @@ import express from "express";
 
 import {
   signup,
-  verfyEmail,
+  verifyEmail,
   login,
   refresh,
   logout,
@@ -22,7 +22,7 @@ const router = express.Router();
 
 router.post("/signup", validate(signupZodSchema), signup);
 
-router.post("/verify-email", validate(verifyEmailZodSchema), verfyEmail);
+router.post("/verify-email", validate(verifyEmailZodSchema), verifyEmail);
 
 router.post("/login", validate(loginZodSchema), login);
 
