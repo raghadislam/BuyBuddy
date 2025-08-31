@@ -462,6 +462,7 @@ class AuthService {
       },
       data: {
         revokedReason: RevokedReason.PASSWORD_CHANGE,
+        revokedAt: new Date(),
       },
     });
 
