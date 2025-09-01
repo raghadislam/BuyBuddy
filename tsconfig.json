@@ -8,8 +8,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2016", "esnext.asynciterable"] // Support async/await and other features used by Prisma.
+    "lib": ["es2016", "esnext.asynciterable"]
   },
-  "include": ["src/**/*", "generated/prisma"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "generated/prisma", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"],
+  "ts-node": {
+    "files": true
+  }
 }

@@ -10,6 +10,7 @@ import {
   resetPassword,
 } from "./auth.controller";
 import { validate } from "../../middlewares/validation.middleware";
+import { authenticate } from "../../middlewares/authenticate.middleware";
 import {
   signupZodSchema,
   verifyEmailZodSchema,
@@ -28,7 +29,7 @@ router.post("/login", validate(loginZodSchema), login);
 
 router.post("/refresh", refresh);
 
-router.post("/logout", logout);
+router.post("/logout", authenticate, logout);
 
 router.post(
   "/forget-password",
