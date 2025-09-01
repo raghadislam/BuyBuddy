@@ -10,6 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2016", "esnext.asynciterable"] // Support async/await and other features used by Prisma.
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "generated/prisma"],
   "exclude": ["node_modules", "dist"]
 }
