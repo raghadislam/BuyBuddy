@@ -5,14 +5,9 @@ import { Role } from "../../enums/role.enum";
 export const signupZodSchema = z.object({
   body: z
     .object({
-      firstName: z
+      name: z
         .string()
-        .min(4, "Name should be 4 characters at minimum")
-        .max(20, "Name cannot be more than 20 charcters"),
-
-      lastName: z
-        .string()
-        .min(4, "Name should be 4 characters at minimum")
+        .min(4, "Name should be 3 characters at minimum")
         .max(20, "Name cannot be more than 20 charcters"),
 
       email: z.string().email({ message: "Invalid email address" }),

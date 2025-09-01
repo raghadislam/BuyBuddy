@@ -40,8 +40,7 @@ enum RevokedReason {
 
 model User {
   id                         String         @id @default(uuid())
-  firstName                  String
-  lastName                   String
+  name                       String
   email                      String         @unique
   password                   String
   role                       Role           @default(USER)

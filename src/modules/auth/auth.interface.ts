@@ -3,8 +3,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { Role, Status } from "../../generated/prisma";
 
 export interface ISignupPayload {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   password: string;
   role: Extract<Role, "USER" | "SELLER">;

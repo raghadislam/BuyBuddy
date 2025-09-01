@@ -1,7 +1,6 @@
 export const userSafeSelect = {
   id: true,
-  firstName: true,
-  lastName: true,
+  name: true,
   email: true,
   createdAt: true,
   updatedAt: true,
@@ -12,4 +11,12 @@ export const userSafeSelect = {
 export const userLoginSelect = {
   ...userSafeSelect,
   password: true,
+};
+
+export const userResetPasswordSelect = {
+  id: true,
+  name: true,
+  email: true,
+  passwordResetCode: true,
+  passwordResetCodeExpiresAt: true,
 };

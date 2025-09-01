@@ -26,7 +26,11 @@ import {
   verifyRefreshToken,
   hashToken,
 } from "./token.service";
-import { userSafeSelect, userLoginSelect } from "../user/user.select";
+import {
+  userSafeSelect,
+  userLoginSelect,
+  userResetPasswordSelect,
+} from "../user/user.select";
 import { generateNumericCode, hashCode, compareCode } from "./code.util";
 
 class AuthService {
@@ -122,8 +126,7 @@ class AuthService {
       data: {
         email: payload.email,
         password: payload.password,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
+        name: payload.name,
         status: Status.UNVERIFIED,
         role: payload.role,
       },
@@ -141,7 +144,7 @@ class AuthService {
     await this.generateAndSendVerificationCode("Verify your email", user.email);
 
     logger.info(
-      `New user registered ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
+      `New user registered ID: ${user.id}, name: ${user.name} ${user.name}`
     );
     return user;
   }
@@ -215,13 +218,11 @@ class AuthService {
     // Send email notification that account has been verified
     await sendAccountVerifiedEmail(user.email, {
       subject: "Verify your email",
-      firstName: user.firstName,
+      name: user.name,
     });
 
     // Log verification for auditing/debugging
-    logger.info(
-      `User verified ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
-    );
+    logger.info(`User verified ID: ${user.id}, name: ${user.name}`);
 
     // Return verified user and tokens
     return { user, accessToken, refreshToken };
@@ -286,9 +287,7 @@ class AuthService {
     // Exclude the password field from the user object and keep the rest as safeUser
     const { password: _, ...safeUser } = user;
 
-    logger.info(
-      `User logged in ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
-    );
+    logger.info(`User logged in ID: ${user.id}, name: ${user.name}`);
     return { user: safeUser, accessToken, refreshToken };
   }
 
@@ -342,9 +341,7 @@ class AuthService {
       email: user.email,
     });
 
-    logger.info(
-      `Token refreshed for user ID: ${user.id}, name: ${user.firstName} ${user.lastName}`
-    );
+    logger.info(`Token refreshed for user ID: ${user.id}, name: ${user.name}}`);
     return { user, accessToken };
   }
 
@@ -390,13 +387,7 @@ class AuthService {
     // Find user with password reset fields only
     const existingUser = await prisma.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-        firstName: true,
-        email: true,
-        passwordResetCode: true,
-        passwordResetCodeExpiresAt: true,
-      },
+      select: userResetPasswordSelect,
     });
 
     // If no user found, return 404
@@ -479,7 +470,7 @@ class AuthService {
     // Send confirmation email
     await sendPasswordResetConfirmation(user.email, {
       subject: "Your password has been reset successfully",
-      firstName: user.firstName,
+      name: user.name,
     });
 
     logger.info(
