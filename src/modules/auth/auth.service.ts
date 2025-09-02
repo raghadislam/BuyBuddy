@@ -7,16 +7,19 @@ import {
   ILogoutPayload,
   IForgetPasswordPayload,
   IResetPasswordPayload,
+  IHandleGoogleCallbackPayload,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status } from "../../enums/status.enum";
-import { RevokedReason } from "../../generated/prisma";
+import { RevokedReason } from "../../enums/revokedReason.enum";
+import { Provider } from "../../enums/provider.enum";
 import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
   sendPasswordResetCode,
   sendPasswordResetConfirmation,
+  sendAccountActivatedEmail,
 } from "../../services/email/send";
 import { hashPassword, comparePassword } from "../../utils/functions/hash";
 import logger from "../../config/logger.config";
@@ -129,6 +132,7 @@ class AuthService {
         name: payload.name,
         status: Status.UNVERIFIED,
         role: payload.role,
+        provider: Provider.LOCAL,
       },
       select: userSafeSelect,
     });
@@ -159,6 +163,7 @@ class AuthService {
         id: true,
         verificationCode: true,
         verificationCodeExpiresAt: true,
+        status: true,
       },
     });
 
@@ -215,11 +220,19 @@ class AuthService {
     });
     const refreshToken = await generateRefreshToken({ id: user.id });
 
-    // Send email notification that account has been verified
-    await sendAccountVerifiedEmail(user.email, {
-      subject: "Verify your email",
-      name: user.name,
-    });
+    if (existingUser.status === Status.INACTIVE) {
+      // Send email notification that account has been activated
+      await sendAccountActivatedEmail(user.email, {
+        subject: "Your account is now active",
+        name: user.name,
+      });
+    } else {
+      // Send email notification that account has been verified
+      await sendAccountVerifiedEmail(user.email, {
+        subject: "Verify your email",
+        name: user.name,
+      });
+    }
 
     // Log verification for auditing/debugging
     logger.info(`User verified ID: ${user.id}, name: ${user.name}`);
@@ -478,6 +491,26 @@ class AuthService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  async handleGoogleCallback(payload: IHandleGoogleCallbackPayload) {
+    const { email } = payload;
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: userSafeSelect,
+    });
+
+    // Generate fresh tokens
+    const accessToken = generateAccessToken({
+      id: user!.id,
+      role: user!.role,
+      createdAt: user!.createdAt,
+      status: user!.status,
+      email: user!.email,
+    });
+    const refreshToken = await generateRefreshToken({ id: user!.id });
+
+    return { accessToken, refreshToken, user };
   }
 }
 
