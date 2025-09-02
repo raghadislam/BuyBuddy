@@ -35,6 +35,8 @@ enum RevokedReason {
   EXPIRED
   ADMIN_REVOKED
   PASSWORD_CHANGE
+  TOKEN_REUSE_DETECTED
+  ROTATED
   OTHER
 }
 
@@ -73,6 +75,7 @@ model RefreshToken {
   updatedAt     DateTime       @updatedAt
   revokedAt     DateTime?
   revokedReason RevokedReason?
+  jti           String
 
   @@index([expiresAt])
 }
