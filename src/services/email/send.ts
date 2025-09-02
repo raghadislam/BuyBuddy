@@ -41,7 +41,7 @@ export async function sendAccountVerifiedEmail(
   to: string,
   options?: {
     subject?: string;
-    firstName?: string;
+    name?: string;
   }
 ): Promise<void> {
   const subject =
@@ -49,14 +49,14 @@ export async function sendAccountVerifiedEmail(
     "You're verified — welcome to " + (env.APP_NAME ?? "our app");
 
   const html = await renderTemplate("accountVerified", {
-    firstName: options?.firstName ?? null,
+    name: options?.name ?? null,
     appName: env.APP_NAME ?? "Our App",
     time: new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
     year: new Date().getFullYear(),
   });
 
   const text = `
-Hi ${options?.firstName ?? "there"}!
+Hi ${options?.name ?? "there"}!
 
 Your ${
     env.APP_NAME ?? "App"
@@ -111,7 +111,7 @@ export async function sendPasswordResetConfirmation(
   to: string,
   options?: {
     subject?: string;
-    firstName?: string;
+    name?: string;
   }
 ): Promise<void> {
   const subject = options?.subject ?? "Your password has been changed";
@@ -123,10 +123,54 @@ export async function sendPasswordResetConfirmation(
   } was changed on ${time}.\nIf you made this change, no further action is required.\nIf you didn't make this change, please reset your password immediately or contact support at \n"support@example.com"\n}.`;
 
   const html = await renderTemplate("passwordResetConfirmation", {
-    firstName: options?.firstName ?? null,
+    name: options?.name ?? null,
     appName: env.APP_NAME ?? "Our App",
     time,
     year,
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
+}
+
+export async function sendAccountActivatedEmail(
+  to: string,
+  options?: { subject?: string; name?: string }
+): Promise<void> {
+  const subject = options?.subject ?? "Your account is now active";
+  const name = options?.name;
+
+  const appName = env.APP_NAME ?? "Our App";
+  const timeStr = new Date().toLocaleString("en-US", {
+    timeZone: "Africa/Cairo",
+  });
+
+  // Plain-text fallback
+  const textLines = [
+    `${name ? `Hi ${name},` : `Hello,`}`,
+    ``,
+    `Your ${appName} account has been successfully activated.`,
+    ``,
+    `If you did not activate this account or you believe this was a mistake, please contact our support team.`,
+    ``,
+    `Regards,`,
+    `${appName} Team`,
+    `${timeStr}`,
+  ];
+  const text = textLines.join("\n");
+
+  // HTML via your template system (preferred)
+  const html = await renderTemplate("activationConfirmed", {
+    name,
+    appName,
+    time: timeStr,
   });
 
   const mailOpts: SendMailOptions = {

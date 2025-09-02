@@ -1,11 +1,13 @@
 import { RequestHandler, Request } from "express";
 
 import APIError from "../utils/APIError";
-import { verifyAccessToken } from "../modules/auth/token.service";
+import {
+  verifyAccessToken,
+  verifyRefreshToken,
+} from "../modules/auth/token.service";
 import prisma from "../config/prisma.config";
 import { Status } from "../enums/status.enum";
 import { userSafeSelect } from "../modules/user/user.select";
-import { hashToken } from "../modules/auth/token.service";
 
 const getTokenFromRequest = (req: Request): string | undefined => {
   if (
@@ -28,15 +30,15 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
       401
     );
 
-  // Verify token and extract payload.
-  const decoded = verifyAccessToken(accessToken);
-  if (!decoded?.id) {
+  // Verify access token and extract payload.
+  const accessDecoded = verifyAccessToken(accessToken);
+  if (!accessDecoded?.id) {
     throw new APIError("Invalid or expired access token.", 401);
   }
 
   // Fetch the user referenced in the token. We select a "safe" projection
   const user = await prisma.user.findUnique({
-    where: { id: decoded.id },
+    where: { id: accessDecoded.id },
     select: userSafeSelect,
   });
 
@@ -51,13 +53,14 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
     throw new APIError("Invalid or expired refresh token.", 401);
   }
 
-  const hashed = hashToken(refreshToken);
+  // Verify refresh token and extract payload.
+  const refreshDecoded = verifyRefreshToken(refreshToken);
 
   // Look up a matching refresh token record in the database that are not revoked
   const refreshTokenRecord = await prisma.refreshToken.findFirst({
     where: {
-      token: hashed,
       revokedReason: null,
+      jti: refreshDecoded.jti,
     },
   });
 

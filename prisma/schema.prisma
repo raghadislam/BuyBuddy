@@ -35,13 +35,19 @@ enum RevokedReason {
   EXPIRED
   ADMIN_REVOKED
   PASSWORD_CHANGE
+  TOKEN_REUSE_DETECTED
+  ROTATED
   OTHER
+}
+
+enum Provider {
+  LOCAL
+  GOOGLE
 }
 
 model User {
   id                         String         @id @default(uuid())
-  firstName                  String
-  lastName                   String
+  name                       String
   email                      String         @unique
   password                   String
   role                       Role           @default(USER)
@@ -53,6 +59,10 @@ model User {
   passwordResetCode          String?
   passwordResetCodeExpiresAt DateTime?
   RefreshToken               RefreshToken[]
+  provider                   Provider       @default(LOCAL)
+  providerId                 String?
+
+  @@unique([provider, providerId])
 }
 
 model RefreshToken {
@@ -65,6 +75,7 @@ model RefreshToken {
   updatedAt     DateTime       @updatedAt
   revokedAt     DateTime?
   revokedReason RevokedReason?
+  jti           String         @unique
 
   @@index([expiresAt])
 }

@@ -41,6 +41,7 @@ export const generateRefreshToken = async (
 
   await prisma.refreshToken.create({
     data: {
+      jti: payload.jti,
       token: hashed,
       expiresAt,
       userId: payload.id,
