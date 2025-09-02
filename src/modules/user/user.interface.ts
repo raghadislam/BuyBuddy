@@ -1,4 +1,4 @@
-import { Role, Status } from "../../generated/prisma";
+import { Role, Status, Provider } from "../../generated/prisma";
 
 export interface IUser {
   id: string;
@@ -13,4 +13,6 @@ export interface IUser {
   verificationCodeExpiresAt?: Date;
   passwordResetCode?: String;
   passwordResetCodeExpiresAt?: Date;
+  provider: Provider;
+  providerId?: string | null;
 }

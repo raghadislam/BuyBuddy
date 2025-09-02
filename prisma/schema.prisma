@@ -38,6 +38,11 @@ enum RevokedReason {
   OTHER
 }
 
+enum Provider {
+  LOCAL
+  GOOGLE
+}
+
 model User {
   id                         String         @id @default(uuid())
   name                       String
@@ -52,6 +57,10 @@ model User {
   passwordResetCode          String?
   passwordResetCodeExpiresAt DateTime?
   RefreshToken               RefreshToken[]
+  provider                   Provider       @default(LOCAL)
+  providerId                 String?
+
+  @@unique([provider, providerId])
 }
 
 model RefreshToken {

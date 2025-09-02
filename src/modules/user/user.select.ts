@@ -6,6 +6,7 @@ export const userSafeSelect = {
   updatedAt: true,
   role: true,
   status: true,
+  provider: true,
 };
 
 export const userLoginSelect = {
