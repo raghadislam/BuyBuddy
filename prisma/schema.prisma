@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  MANAGER
+  ADMIN
+  SELLER
+  USER
+  GUEST
+}
+
+enum Status {
+  UNVERIFIED
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum RevokedReason {
+  USER_LOGOUT
+  EXPIRED
+  ADMIN_REVOKED
+  PASSWORD_CHANGE
+  TOKEN_REUSE_DETECTED
+  ROTATED
+  OTHER
+}
+
+enum Provider {
+  LOCAL
+  GOOGLE
+}
+
+model User {
+  id                         String         @id @default(uuid())
+  name                       String
+  email                      String         @unique
+  password                   String
+  role                       Role           @default(USER)
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+  status                     Status         @default(UNVERIFIED)
+  verificationCode           String?
+  verificationCodeExpiresAt  DateTime?
+  passwordResetCode          String?
+  passwordResetCodeExpiresAt DateTime?
+  RefreshToken               RefreshToken[]
+  provider                   Provider       @default(LOCAL)
+  providerId                 String?
+
+  @@unique([provider, providerId])
+}
+
+model RefreshToken {
+  id            String         @id @default(uuid())
+  token         String
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  expiresAt     DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  revokedAt     DateTime?
+  revokedReason RevokedReason?
+  jti           String         @unique
+
+  @@index([expiresAt])
+}
