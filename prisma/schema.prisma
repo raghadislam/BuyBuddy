@@ -75,7 +75,7 @@ model RefreshToken {
   updatedAt     DateTime       @updatedAt
   revokedAt     DateTime?
   revokedReason RevokedReason?
-  jti           String
+  jti           String         @unique
 
   @@index([expiresAt])
 }

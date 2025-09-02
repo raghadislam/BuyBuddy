@@ -375,7 +375,7 @@ class AuthService {
 
     // Look up the stored refresh-token record by jti
     const storedToken = await prisma.refreshToken.findUnique({
-      where: { id: decoded.jti },
+      where: { jti: decoded.jti },
     });
 
     // If token record doesn't exist or doesn't belong to user => invalid
