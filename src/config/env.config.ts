@@ -34,12 +34,13 @@ export default z
     GMAIL_PASSWORD: z.string().optional(),
 
     // Gmail OAuth2
-    GMAIL_CLIENT_ID: z.string().optional(),
-    GMAIL_CLIENT_SECRET: z.string().optional(),
-    GMAIL_REFRESH_TOKEN: z.string().optional(),
-    GMAIL_ACCESS_TOKEN: z.string().optional(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+    GOOGLE_CALLBACK_URL: z.string(),
 
     EMAIL_VERIFICATION_TTL_MINUTES: z.coerce.number().default(10),
+    PASSWORD_RESET_TTL_MINUTES: z.coerce.number().default(10),
+    ACTIVE_ACCOUNT_TTL_MINUTES: z.coerce.number().default(10),
 
     // Auth / JWT settings
     ACCESS_TOKEN_SECRET: z.string().min(1, "ACCESS_TOKEN_SECRET is required"),

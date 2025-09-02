@@ -41,6 +41,7 @@ export const generateRefreshToken = async (
 
   await prisma.refreshToken.create({
     data: {
+      jti: payload.jti,
       token: hashed,
       expiresAt,
       userId: payload.id,
@@ -50,15 +51,8 @@ export const generateRefreshToken = async (
   return refreshToken;
 };
 
-const verifyJWT = <T>(
-  token: string,
-  secret: string
-): (T & JwtPayload) | false => {
-  try {
-    return jwt.verify(token, secret) as T & JwtPayload;
-  } catch {
-    return false;
-  }
+const verifyJWT = <T>(token: string, secret: string): T & JwtPayload => {
+  return jwt.verify(token, secret) as T & JwtPayload;
 };
 
 export const verifyAccessToken = (token: string) => {

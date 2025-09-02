@@ -5,14 +5,9 @@ import { Role } from "../../enums/role.enum";
 export const signupZodSchema = z.object({
   body: z
     .object({
-      firstName: z
+      name: z
         .string()
-        .min(4, "Name should be 4 characters at minimum")
-        .max(20, "Name cannot be more than 20 charcters"),
-
-      lastName: z
-        .string()
-        .min(4, "Name should be 4 characters at minimum")
+        .min(4, "Name should be 3 characters at minimum")
         .max(20, "Name cannot be more than 20 charcters"),
 
       email: z.string().email({ message: "Invalid email address" }),
@@ -33,6 +28,8 @@ export const signupZodSchema = z.object({
 
 export const verifyEmailZodSchema = z.object({
   body: z.object({
+    email: z.string().email({ message: "Invalid email address" }),
+
     code: z
       .string()
       .length(6, "Verification code must be exactly 6 characters"),
@@ -44,4 +41,33 @@ export const loginZodSchema = z.object({
     email: z.string().min(1, "Email is required").email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
   }),
+});
+
+export const forgetPasswordZodSchema = z.object({
+  body: z.object({
+    email: z.string().min(1, "Email is required").email("Invalid email format"),
+  }),
+});
+
+export const resetPasswordZodSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email({ message: "Invalid email address" }),
+
+      code: z
+        .string()
+        .length(6, "Verification code must be exactly 6 characters"),
+
+      newPassword: z
+        .string()
+        .min(6, "New password should be more than 6 characters"),
+
+      confirmNewPassword: z
+        .string()
+        .min(6, "Confirm new password should be more than 6 characters"),
+    })
+    .refine((data) => data.newPassword === data.confirmNewPassword, {
+      message: "Passwords don't match",
+      path: ["Password confirmations"],
+    }),
 });

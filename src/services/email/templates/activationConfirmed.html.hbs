@@ -11,33 +11,40 @@
       20px; text-align: center; background: linear-gradient(90deg, #0ea5e9,
       #7c3aed); color: #fff; } .header .brand { font-weight: 700; font-size:
       18px; } .body { padding: 20px; color: #0b1220; line-height: 1.5; } h1 {
-      font-size: 18px; margin: 0 0 12px; } .small { font-size: 13px; color:
-      #6b7280; margin-top: 14px; } .footer { padding: 16px; font-size: 12px;
-      color: #94a3b8; text-align: center; } @media (max-width: 420px) { .wrap {
-      margin: 12px; } }
+      font-size: 18px; margin: 0 0 12px; } .lead { margin: 8px 0 16px; }
+      .button-wrap { margin: 18px 0; text-align: center; } .cta { display:
+      inline-block; text-decoration: none; padding: 12px 20px; border-radius:
+      8px; font-weight: 600; box-shadow: 0 4px 14px rgba(12, 74, 166, 0.12); }
+      .cta--primary { background: #0ea5e9; color: #fff; } .small { font-size:
+      13px; color: #6b7280; margin-top: 14px; } .footer { padding: 16px;
+      font-size: 12px; color: #94a3b8; text-align: center; } a { color: inherit;
+      } @media (max-width: 420px) { .wrap { margin: 12px; } .cta { width: 100%;
+      display: inline-block; } }
     </style>
   </head>
+
   <body>
-    <div class="wrap">
+    <div class="wrap" role="article" aria-labelledby="title">
       <div class="header">
         <div class="brand">{{appName}}</div>
       </div>
 
       <div class="body">
-        <h1>You're all set — account verified ✅</h1>
+        <h1 id="title">You're all set — account verified ✅</h1>
 
-        <p>Hi {{#if name}}{{name}}{{else}}there{{/if}},</p>
+        <p class="lead">Hi {{#if name}}{{name}}{{else}}there{{/if}},</p>
 
         <p>
           Your
-          {{appName}}
+          <strong>{{appName}}</strong>
           account has been successfully verified. You can now sign in and start
           using the app.
         </p>
 
         <p class="small">
           Time of verification:
-          {{time}}
+          <br />
+          <strong>{{time}}</strong>
         </p>
 
         <p class="small">

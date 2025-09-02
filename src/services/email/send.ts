@@ -1,49 +1,22 @@
-import crypto from "crypto";
-
 import { SendMailOptions } from "./interface";
 import { createMailProvider } from "./adapter";
 import env from "../../config/env.config";
 import { renderTemplate } from "./templates";
-import prisma from "../../config/prisma.config";
 
 const provider = createMailProvider();
-
-function generateNumericCode(length: number): string {
-  const max = 10 ** length;
-  const n = Math.floor(Math.random() * max)
-    .toString()
-    .padStart(length, "0");
-  return n;
-}
 
 export async function sendEmail(opts: SendMailOptions) {
   await provider.sendMail(opts);
 }
 
-export type VerificationResult = {
-  code: string;
-  expiresAt: Date;
-};
-
 export async function sendVerificationCode(
   to: string,
+  code: string,
   options?: {
     subject?: string;
   }
-): Promise<VerificationResult> {
+): Promise<void> {
   const ttl = env.EMAIL_VERIFICATION_TTL_MINUTES;
-  const code = generateNumericCode(6);
-  const hashed = crypto.createHash("sha256").update(code).digest("hex");
-  const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
-
-  await prisma.user.update({
-    where: { email: to },
-    data: {
-      verificationCode: hashed,
-      verificationCodeExpiresAt: expiresAt,
-    },
-  });
-
   const subject = options?.subject ?? "Your verification code";
   const text = `Your verification code is: ${code}\nThis code will expire in ${ttl} minutes.`;
 
@@ -61,14 +34,14 @@ export async function sendVerificationCode(
 
   await provider.sendMail(mailOpts);
 
-  return { code, expiresAt };
+  return;
 }
 
 export async function sendAccountVerifiedEmail(
   to: string,
   options?: {
     subject?: string;
-    firstName?: string;
+    name?: string;
   }
 ): Promise<void> {
   const subject =
@@ -76,14 +49,14 @@ export async function sendAccountVerifiedEmail(
     "You're verified — welcome to " + (env.APP_NAME ?? "our app");
 
   const html = await renderTemplate("accountVerified", {
-    firstName: options?.firstName ?? null,
+    name: options?.name ?? null,
     appName: env.APP_NAME ?? "Our App",
     time: new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
     year: new Date().getFullYear(),
   });
 
   const text = `
-Hi ${options?.firstName ?? "there"}!
+Hi ${options?.name ?? "there"}!
 
 Your ${
     env.APP_NAME ?? "App"
@@ -104,4 +77,109 @@ The ${env.APP_NAME ?? "App"} Team
   };
 
   await sendEmail(mailOpts);
+}
+
+export async function sendPasswordResetCode(
+  to: string,
+  code: string,
+  options?: { subject?: string }
+): Promise<void> {
+  const ttl =
+    env.PASSWORD_RESET_TTL_MINUTES ?? env.EMAIL_VERIFICATION_TTL_MINUTES ?? 15;
+  const subject = options?.subject ?? "Reset your password";
+  const text = `You requested to reset your password. Use this code to reset it: ${code}\nThis code expires in ${ttl} minutes.\nIf you didn't request this, ignore this email.`;
+
+  const html = await renderTemplate("passwordReset", {
+    code,
+    ttlMinutes: ttl,
+    appName: env.APP_NAME ?? "Our App",
+    time: new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
+}
+
+export async function sendPasswordResetConfirmation(
+  to: string,
+  options?: {
+    subject?: string;
+    name?: string;
+  }
+): Promise<void> {
+  const subject = options?.subject ?? "Your password has been changed";
+  const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+  const year = new Date().getFullYear();
+
+  const text = `Your password for ${
+    env.APP_NAME ?? "Our App"
+  } was changed on ${time}.\nIf you made this change, no further action is required.\nIf you didn't make this change, please reset your password immediately or contact support at \n"support@example.com"\n}.`;
+
+  const html = await renderTemplate("passwordResetConfirmation", {
+    name: options?.name ?? null,
+    appName: env.APP_NAME ?? "Our App",
+    time,
+    year,
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
+}
+
+export async function sendAccountActivatedEmail(
+  to: string,
+  options?: { subject?: string; name?: string }
+): Promise<void> {
+  const subject = options?.subject ?? "Your account is now active";
+  const name = options?.name;
+
+  const appName = env.APP_NAME ?? "Our App";
+  const timeStr = new Date().toLocaleString("en-US", {
+    timeZone: "Africa/Cairo",
+  });
+
+  // Plain-text fallback
+  const textLines = [
+    `${name ? `Hi ${name},` : `Hello,`}`,
+    ``,
+    `Your ${appName} account has been successfully activated.`,
+    ``,
+    `If you did not activate this account or you believe this was a mistake, please contact our support team.`,
+    ``,
+    `Regards,`,
+    `${appName} Team`,
+    `${timeStr}`,
+  ];
+  const text = textLines.join("\n");
+
+  // HTML via your template system (preferred)
+  const html = await renderTemplate("activationConfirmed", {
+    name,
+    appName,
+    time: timeStr,
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
 }

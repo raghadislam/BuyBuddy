@@ -1,16 +1,15 @@
-import { JwtPayload } from "jsonwebtoken";
-
 import { Role, Status } from "../../generated/prisma";
 
+import { IUser } from "../user/user.interface";
 export interface ISignupPayload {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   password: string;
   role: Extract<Role, "USER" | "SELLER">;
 }
 export interface IVerfiyEmail {
   code: string;
+  email: string;
 }
 
 export interface ILoginPayload {
@@ -28,6 +27,7 @@ export interface IAccessTokenPayload {
 
 export interface IRefreshTokenPayload {
   id: string;
+  jti: string;
 }
 
 export interface IRefreshPayload {
@@ -37,3 +37,15 @@ export interface IRefreshPayload {
 export interface ILogoutPayload {
   refreshToken: string;
 }
+
+export interface IForgetPasswordPayload {
+  email: string;
+}
+
+export interface IResetPasswordPayload {
+  code: string;
+  newPassword: string;
+  email: string;
+}
+
+export interface IHandleGoogleCallbackPayload extends IUser {}
