@@ -8,6 +8,7 @@ import {
   logout,
   forgetPassword,
   resetPassword,
+  googleCallbackHandler,
 } from "./auth.controller";
 import { validate } from "../../middlewares/validation.middleware";
 import { authenticate } from "../../middlewares/authenticate.middleware";
@@ -18,6 +19,7 @@ import {
   forgetPasswordZodSchema,
   resetPasswordZodSchema,
 } from "./auth.validation";
+import passport from "../../config/passport.config";
 
 const router = express.Router();
 
@@ -39,4 +41,17 @@ router.post(
 
 router.post("/reset-password", validate(resetPasswordZodSchema), resetPassword);
 
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "/login",
+    session: false,
+  }),
+  googleCallbackHandler
+);
 export default router;

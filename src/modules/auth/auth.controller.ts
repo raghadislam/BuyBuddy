@@ -6,9 +6,11 @@ import {
   ILoginPayload,
   IForgetPasswordPayload,
   IResetPasswordPayload,
+  IHandleGoogleCallbackPayload,
 } from "./auth.interface";
 import AuthService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
+import { HttpStatus } from "../../enums/httpStatus.enum";
 
 export const signup: RequestHandler = async (req, res) => {
   const payload: ISignupPayload = req.body;
@@ -101,6 +103,22 @@ export const resetPassword: RequestHandler = async (req, res) => {
     statusCode: 200,
     message:
       "Your password has been reset successfully. You are now signed in on this device. For security reasons, all other sessions have been logged out.",
+    accessToken,
+  });
+};
+
+export const googleCallbackHandler: RequestHandler = async (req, res, next) => {
+  const { accessToken, refreshToken, user } =
+    await AuthService.handleGoogleCallback(
+      req.user as IHandleGoogleCallbackPayload
+    );
+
+  sendCookie(res, refreshToken);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    data: {
+      user: req.user,
+    },
     accessToken,
   });
 };
