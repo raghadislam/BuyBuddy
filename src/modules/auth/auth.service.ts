@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from "uuid";
+
 import env from "../../config/env.config";
 import {
   ISignupPayload,
@@ -226,7 +228,10 @@ class AuthService {
       status: user.status,
       email: user.email,
     });
-    const refreshToken = await generateRefreshToken({ id: user.id });
+    const refreshToken = await generateRefreshToken({
+      id: user.id,
+      jti: uuidv4(),
+    });
 
     // Send emails, but don't let it break the flow.
     (async () => {
@@ -311,7 +316,10 @@ class AuthService {
       status: user.status,
       email: user.email,
     });
-    const refreshToken = await generateRefreshToken({ id: user.id });
+    const refreshToken = await generateRefreshToken({
+      id: user.id,
+      jti: uuidv4(),
+    });
 
     // Exclude the password field from the user object and keep the rest as safeUser
     const { password: _, ...safeUser } = user;
@@ -324,11 +332,11 @@ class AuthService {
     const { refreshToken } = payload;
     const decoded = await verifyRefreshToken(refreshToken);
 
-    if (!decoded) {
+    if (!decoded || !decoded.id || !decoded.jti) {
       throw new APIError("Invalid refresh token", HttpStatus.Unauthorized);
     }
 
-    // Find user by ID
+    // find user
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: userSafeSelect,
@@ -339,7 +347,7 @@ class AuthService {
       throw new APIError("User not found", HttpStatus.Forbidden);
     }
 
-    // Check if user exists and is not suspended before refreshing token
+    // status checks
     if (user.status === Status.SUSPENDED) {
       throw new APIError(
         "Your account has been suspended. Please contact support.",
@@ -365,6 +373,67 @@ class AuthService {
       );
     }
 
+    // Look up the stored refresh-token record by jti
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { id: decoded.jti },
+    });
+
+    // If token record doesn't exist or doesn't belong to user => invalid
+    if (!storedToken || storedToken.userId !== user.id) {
+      throw new APIError("Invalid refresh token", HttpStatus.Unauthorized);
+    }
+
+    // If token was already revoked -> possible reuse (token theft)
+    if (storedToken.revokedReason) {
+      // Revoke all active refresh tokens for this user as a precaution
+      await prisma.refreshToken.updateMany({
+        where: { userId: user.id, revokedReason: null },
+        data: {
+          revokedReason: RevokedReason.TOKEN_REUSE_DETECTED,
+          revokedAt: new Date(),
+        },
+      });
+
+      logger.warn(
+        `Refresh token reuse detected for user ID ${user.id}, token ${storedToken.id}`
+      );
+
+      throw new APIError(
+        "Refresh token has been revoked. Please login again.",
+        HttpStatus.Unauthorized
+      );
+    }
+
+    // Check expiration of stored refresh token (defense-in-depth)
+    if (storedToken.expiresAt && storedToken.expiresAt < new Date()) {
+      // mark it revoked for clarity
+      await prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date(), revokedReason: RevokedReason.EXPIRED },
+      });
+
+      throw new APIError(
+        "Refresh token expired. Please login again.",
+        HttpStatus.Unauthorized
+      );
+    }
+
+    // Everything checks out: rotate the refresh token
+    const newRefreshToken = await generateRefreshToken({
+      id: user.id,
+      jti: uuidv4(),
+    });
+
+    // Revoke the old token and mark replacement
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: {
+        revokedAt: new Date(),
+        revokedReason: RevokedReason.ROTATED,
+      },
+    });
+
+    // Create a fresh access token as before
     const accessToken = generateAccessToken({
       id: user.id,
       role: user.role,
@@ -373,8 +442,13 @@ class AuthService {
       email: user.email,
     });
 
-    logger.info(`Token refreshed for user ID: ${user.id}, name: ${user.name}}`);
-    return { user, accessToken };
+    logger.info(`Token refreshed for user ID: ${user.id}, name: ${user.name}`);
+
+    return {
+      user,
+      accessToken,
+      newRefreshToken,
+    };
   }
 
   async logout(payload: ILogoutPayload) {
@@ -503,7 +577,10 @@ class AuthService {
       status: user.status,
       email: user.email,
     });
-    const refreshToken = await generateRefreshToken({ id: user.id });
+    const refreshToken = await generateRefreshToken({
+      id: user.id,
+      jti: uuidv4(),
+    });
 
     // Send confirmation email, but don't let it break the flow.
     (async () => {
@@ -541,7 +618,10 @@ class AuthService {
       status: user!.status,
       email: user!.email,
     });
-    const refreshToken = await generateRefreshToken({ id: user!.id });
+    const refreshToken = await generateRefreshToken({
+      id: user!.id,
+      jti: uuidv4(),
+    });
 
     return { accessToken, refreshToken, user };
   }

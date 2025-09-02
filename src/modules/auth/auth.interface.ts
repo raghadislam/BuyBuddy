@@ -27,6 +27,7 @@ export interface IAccessTokenPayload {
 
 export interface IRefreshTokenPayload {
   id: string;
+  jti: string;
 }
 
 export interface IRefreshPayload {
