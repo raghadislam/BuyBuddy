@@ -453,16 +453,16 @@ class AuthService {
 
   async logout(payload: ILogoutPayload) {
     const { refreshToken } = payload;
-    // Hash the refresh token for secure comparison in the database
-    const hashed = hashToken(refreshToken);
+    // Verify refresh token and extract payload.
+    const decoded = verifyRefreshToken(refreshToken);
 
     // Revoke the refresh token by updating its record in the database
     await prisma.refreshToken.updateMany({
-      where: { token: hashed, revokedAt: null },
+      where: { jti: decoded.jti, revokedAt: null },
       data: { revokedAt: new Date(), revokedReason: RevokedReason.USER_LOGOUT },
     });
 
-    logger.info(`Refresh token revoked for logout: ${hashed}`);
+    logger.info(`Refresh token revoked for logout: ${refreshToken}`);
     return;
   }
 
