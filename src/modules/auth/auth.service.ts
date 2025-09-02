@@ -35,6 +35,7 @@ import {
   userResetPasswordSelect,
 } from "../user/user.select";
 import { generateNumericCode, hashCode, compareCode } from "./code.util";
+import { HttpStatus } from "../../enums/httpStatus.enum";
 
 class AuthService {
   private async generateAndSendVerificationCode(
@@ -115,12 +116,12 @@ class AuthService {
       if (existingUser.status === Status.SUSPENDED) {
         throw new APIError(
           "Your account has been suspended. Please contact support.",
-          403
+          HttpStatus.Forbidden
         );
       }
 
       // User is active
-      throw new APIError("User already exists", 409);
+      throw new APIError("User already exists", HttpStatus.Conflict);
     }
 
     // Hash password and create new user
@@ -138,7 +139,10 @@ class AuthService {
     });
 
     if (!user) {
-      throw new APIError("Failed to create user", 500);
+      throw new APIError(
+        "Failed to create user",
+        HttpStatus.InternalServerError
+      );
     }
 
     const code = generateNumericCode();
@@ -168,13 +172,13 @@ class AuthService {
     });
 
     // If no user found, return 404 (email does not exist)
-    if (!existingUser) throw new APIError("Invalid email", 404);
+    if (!existingUser) throw new APIError("Invalid email", HttpStatus.NotFound);
 
     // If user has no verification code stored, ask to request a new one
     if (!existingUser.verificationCode)
       throw new APIError(
         "Verification code not found. Please request a new one.",
-        400
+        HttpStatus.BadRequest
       );
 
     // Check if verification code has expired
@@ -182,11 +186,18 @@ class AuthService {
       !existingUser.verificationCodeExpiresAt ||
       existingUser.verificationCodeExpiresAt <= new Date()
     )
-      throw new APIError("Invalid or expired verification code.", 400);
+      throw new APIError(
+        "Invalid or expired verification code.",
+        HttpStatus.BadRequest
+      );
 
     // Compare provided code with stored hashed code
     const ok = await compareCode(code, existingUser.verificationCode);
-    if (!ok) throw new APIError("Invalid or expired verification code.", 400);
+    if (!ok)
+      throw new APIError(
+        "Invalid or expired verification code.",
+        HttpStatus.BadRequest
+      );
 
     // Update user to ACTIVE and clear verification fields after successful validation
     const user = await prisma.user.update({
@@ -201,7 +212,10 @@ class AuthService {
 
     // If update somehow failed, return server error
     if (!user) {
-      throw new APIError("Failed to verify email", 500);
+      throw new APIError(
+        "Failed to verify email",
+        HttpStatus.InternalServerError
+      );
     }
 
     // Generate access & refresh tokens for the verified user
@@ -253,7 +267,7 @@ class AuthService {
 
     // If no user found or password does not match, throw error
     if (!user || !(await comparePassword(password, user.password))) {
-      throw new APIError("Invalid email or password", 401);
+      throw new APIError("Invalid email or password", HttpStatus.Unauthorized);
     }
 
     // If user has not verified their email, resend verification code and block login
@@ -263,7 +277,10 @@ class AuthService {
         user.email
       );
 
-      throw new APIError("Please verify your email to continue", 403);
+      throw new APIError(
+        "Please verify your email to continue",
+        HttpStatus.Forbidden
+      );
     }
 
     // If user is inactive, resend activation code and block login
@@ -275,7 +292,7 @@ class AuthService {
 
       throw new APIError(
         "Your account is inactive. Please check your email to activate your account.",
-        403
+        HttpStatus.Forbidden
       );
     }
 
@@ -283,7 +300,7 @@ class AuthService {
     if (user.status === Status.SUSPENDED) {
       throw new APIError(
         "Your account has been suspended. Please contact support.",
-        403
+        HttpStatus.Forbidden
       );
     }
 
@@ -308,7 +325,7 @@ class AuthService {
     const decoded = await verifyRefreshToken(refreshToken);
 
     if (!decoded) {
-      throw new APIError("Invalid refresh token", 401);
+      throw new APIError("Invalid refresh token", HttpStatus.Unauthorized);
     }
 
     // Find user by ID
@@ -319,20 +336,20 @@ class AuthService {
 
     // Ensure the user exists before proceeding with token refresh
     if (!user) {
-      throw new APIError("User not found", 403);
+      throw new APIError("User not found", HttpStatus.Forbidden);
     }
 
     // Check if user exists and is not suspended before refreshing token
     if (user.status === Status.SUSPENDED) {
       throw new APIError(
         "Your account has been suspended. Please contact support.",
-        403
+        HttpStatus.Forbidden
       );
     }
 
     // check if user is inactive
     if (user.status === Status.INACTIVE) {
-      throw new APIError("User is not active", 403);
+      throw new APIError("User is not active", HttpStatus.Forbidden);
     }
 
     // Check if user is unverified
@@ -342,7 +359,10 @@ class AuthService {
         user.email
       );
 
-      throw new APIError("Please verify your email to continue", 403);
+      throw new APIError(
+        "Please verify your email to continue",
+        HttpStatus.Forbidden
+      );
     }
 
     const accessToken = generateAccessToken({
@@ -378,7 +398,10 @@ class AuthService {
 
     // If no user found, return 404 (email does not exist)
     if (!user) {
-      throw new APIError("No account found with this email address.", 404);
+      throw new APIError(
+        "No account found with this email address.",
+        HttpStatus.NotFound
+      );
     }
 
     // Send reset password code
@@ -404,14 +427,17 @@ class AuthService {
 
     // If no user found, return 404
     if (!existingUser) {
-      throw new APIError("No account found with this email address.", 404);
+      throw new APIError(
+        "No account found with this email address.",
+        HttpStatus.NotFound
+      );
     }
 
     // If no reset code is stored, ask user to request a new one
     if (!existingUser.passwordResetCode) {
       throw new APIError(
         "No reset code found. Please request a new password reset.",
-        400
+        HttpStatus.BadRequest
       );
     }
 
@@ -422,7 +448,7 @@ class AuthService {
     ) {
       throw new APIError(
         "Your reset code has expired. Please request a new one.",
-        400
+        HttpStatus.BadRequest
       );
     }
 
@@ -431,7 +457,7 @@ class AuthService {
     if (!ok) {
       throw new APIError(
         "The reset code you entered is invalid. Please try again or request a new one.",
-        400
+        HttpStatus.BadRequest
       );
     }
 
@@ -453,7 +479,7 @@ class AuthService {
     if (!user) {
       throw new APIError(
         "Something went wrong while resetting your password. Please try again.",
-        500
+        HttpStatus.InternalServerError
       );
     }
 
