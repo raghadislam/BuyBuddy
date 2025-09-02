@@ -27,7 +27,7 @@ export const signup: RequestHandler = async (req, res) => {
 
 export const verifyEmail: RequestHandler = async (req, res) => {
   const payload: IVerfiyEmail = req.body;
-  const { user, accessToken, refreshToken } = await AuthService.verfyEmail(
+  const { user, accessToken, refreshToken } = await AuthService.verifyEmail(
     payload
   );
 

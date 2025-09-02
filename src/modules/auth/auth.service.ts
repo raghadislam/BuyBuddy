@@ -153,7 +153,7 @@ class AuthService {
     return user;
   }
 
-  async verfyEmail(payload: IVerfiyEmail) {
+  async verifyEmail(payload: IVerfiyEmail) {
     const { email, code } = payload;
 
     // Find user by email with only fields needed for verification
@@ -168,31 +168,25 @@ class AuthService {
     });
 
     // If no user found, return 404 (email does not exist)
-    if (!existingUser) {
-      throw new APIError("Invalid email", 404);
-    }
+    if (!existingUser) throw new APIError("Invalid email", 404);
 
     // If user has no verification code stored, ask to request a new one
-    if (!existingUser.verificationCode) {
+    if (!existingUser.verificationCode)
       throw new APIError(
         "Verification code not found. Please request a new one.",
         400
       );
-    }
 
     // Check if verification code has expired
     if (
       !existingUser.verificationCodeExpiresAt ||
       existingUser.verificationCodeExpiresAt <= new Date()
-    ) {
+    )
       throw new APIError("Invalid or expired verification code.", 400);
-    }
 
     // Compare provided code with stored hashed code
     const ok = await compareCode(code, existingUser.verificationCode);
-    if (!ok) {
-      throw new APIError("Invalid or expired verification code.", 400);
-    }
+    if (!ok) throw new APIError("Invalid or expired verification code.", 400);
 
     // Update user to ACTIVE and clear verification fields after successful validation
     const user = await prisma.user.update({
@@ -220,25 +214,30 @@ class AuthService {
     });
     const refreshToken = await generateRefreshToken({ id: user.id });
 
-    if (existingUser.status === Status.INACTIVE) {
-      // Send email notification that account has been activated
-      await sendAccountActivatedEmail(user.email, {
-        subject: "Your account is now active",
-        name: user.name,
-      });
-    } else {
-      // Send email notification that account has been verified
-      await sendAccountVerifiedEmail(user.email, {
-        subject: "Verify your email",
-        name: user.name,
-      });
-    }
+    // Send emails, but don't let it break the flow.
+    (async () => {
+      try {
+        if (existingUser.status === Status.INACTIVE) {
+          await sendAccountActivatedEmail(user.email, {
+            subject: "Your account is now active",
+            name: user.name,
+          });
+        } else {
+          await sendAccountVerifiedEmail(user.email, {
+            subject: "Verify your email",
+            name: user.name,
+          });
+        }
+      } catch (err) {
+        logger.error(
+          `Failed to send verification email for user ${user.id}: ${err}`
+        );
+      }
+    })();
 
-    // Log verification for auditing/debugging
     logger.info(`User verified ID: ${user.id}, name: ${user.name}`);
 
-    // Return verified user and tokens
-    return { user, accessToken, refreshToken };
+    return { user, accessToken, refreshToken, emailQueued: true };
   }
 
   async login(payload: ILoginPayload) {
@@ -480,11 +479,19 @@ class AuthService {
     });
     const refreshToken = await generateRefreshToken({ id: user.id });
 
-    // Send confirmation email
-    await sendPasswordResetConfirmation(user.email, {
-      subject: "Your password has been reset successfully",
-      name: user.name,
-    });
+    // Send confirmation email, but don't let it break the flow.
+    (async () => {
+      try {
+        await sendPasswordResetConfirmation(user.email, {
+          subject: "Your password has been reset successfully",
+          name: user.name,
+        });
+      } catch (err) {
+        logger.error(
+          `Failed to send password reset confirm email for user ${user.id}: ${err}`
+        );
+      }
+    })();
 
     logger.info(
       `Password successfully reset for user ID: ${user.id}, email: ${user.email}`
