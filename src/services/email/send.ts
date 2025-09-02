@@ -139,3 +139,47 @@ export async function sendPasswordResetConfirmation(
   await provider.sendMail(mailOpts);
   return;
 }
+
+export async function sendAccountActivatedEmail(
+  to: string,
+  options?: { subject?: string; name?: string }
+): Promise<void> {
+  const subject = options?.subject ?? "Your account is now active";
+  const name = options?.name;
+
+  const appName = env.APP_NAME ?? "Our App";
+  const timeStr = new Date().toLocaleString("en-US", {
+    timeZone: "Africa/Cairo",
+  });
+
+  // Plain-text fallback
+  const textLines = [
+    `${name ? `Hi ${name},` : `Hello,`}`,
+    ``,
+    `Your ${appName} account has been successfully activated.`,
+    ``,
+    `If you did not activate this account or you believe this was a mistake, please contact our support team.`,
+    ``,
+    `Regards,`,
+    `${appName} Team`,
+    `${timeStr}`,
+  ];
+  const text = textLines.join("\n");
+
+  // HTML via your template system (preferred)
+  const html = await renderTemplate("activationConfirmed", {
+    name,
+    appName,
+    time: timeStr,
+  });
+
+  const mailOpts: SendMailOptions = {
+    to,
+    subject,
+    text,
+    html,
+  };
+
+  await provider.sendMail(mailOpts);
+  return;
+}
