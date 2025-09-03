@@ -7,6 +7,7 @@ import {
   IForgetPasswordPayload,
   IResetPasswordPayload,
   IHandleGoogleCallbackPayload,
+  IVerifyPasswordResetCode,
 } from "./auth.interface";
 import AuthService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
@@ -94,6 +95,17 @@ export const forgetPassword: RequestHandler = async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Password reset code has been sent.",
+  });
+};
+
+export const verifyResetCode: RequestHandler = async (req, res, next) => {
+  const payload: IVerifyPasswordResetCode = req.body;
+  const result = await AuthService.verifyPasswordResetCode(payload);
+
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Code verified successfully",
+    data: result,
   });
 };
 

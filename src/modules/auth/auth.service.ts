@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { TokenExpiredError } from "jsonwebtoken";
 
 import env from "../../config/env.config";
 import {
@@ -10,6 +11,9 @@ import {
   IForgetPasswordPayload,
   IResetPasswordPayload,
   IHandleGoogleCallbackPayload,
+  IVerifyPasswordResetCode,
+  IRefreshTokenPayload,
+  IResetTokenPayload,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
@@ -28,8 +32,9 @@ import logger from "../../config/logger.config";
 import {
   generateAccessToken,
   generateRefreshToken,
+  generateResetToken,
   verifyRefreshToken,
-  hashToken,
+  verifyResetToken,
 } from "./token.service";
 import {
   accountSafeSelect,
@@ -512,6 +517,40 @@ class AuthService {
       );
     }
 
+    // If account has not verified their email, resend verification code and block forget password
+    if (account.status === Status.UNVERIFIED) {
+      await this.generateAndSendVerificationCode(
+        "Verify your email",
+        account.email
+      );
+
+      throw new APIError(
+        "Please verify your email to continue",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // If account is inactive, resend activation code and block forget password
+    if (account.status === Status.INACTIVE) {
+      await this.generateAndSendVerificationCode(
+        "Activate your account",
+        account.email
+      );
+
+      throw new APIError(
+        "Your account is inactive. Please check your email to activate your account.",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // If account is suspended, block forget password
+    if (account.status === Status.SUSPENDED) {
+      throw new APIError(
+        "Your account has been suspended. Please contact support.",
+        HttpStatus.Forbidden
+      );
+    }
+
     // Send reset password code
     await this.generateAndSendPasswordResetCode(
       "Your password reset code",
@@ -524,8 +563,8 @@ class AuthService {
     return;
   }
 
-  async resetPassword(payload: IResetPasswordPayload) {
-    const { code, newPassword, email } = payload;
+  async verifyPasswordResetCode(payload: IVerifyPasswordResetCode) {
+    const { code, email } = payload;
 
     // Find account with password reset fields only
     const existingaccount = await prisma.account.findUnique({
@@ -569,12 +608,99 @@ class AuthService {
       );
     }
 
+    // Generate reset token (JWT)
+    const resetToken = await generateResetToken({
+      accountId: existingaccount.id,
+      purpose: "password-reset",
+      jti: uuidv4(),
+    });
+
+    return { resetToken };
+  }
+
+  async resetPassword(payload: IResetPasswordPayload) {
+    const { resetToken, newPassword } = payload;
+
+    let decoded: IResetTokenPayload;
+
+    try {
+      decoded = await verifyResetToken(resetToken);
+    } catch (err) {
+      if (err instanceof TokenExpiredError) {
+        throw new APIError("Invalid or expired token, please try again", 403);
+      }
+      throw err;
+    }
+
+    if (
+      !decoded ||
+      !decoded.accountId ||
+      decoded.purpose !== "password-reset"
+    ) {
+      throw new APIError("Invalid reset token", HttpStatus.Unauthorized);
+    }
+
+    // Find account with password reset fields only
+    const existingaccount = await prisma.account.findUnique({
+      where: { id: decoded.accountId },
+      select: accountResetPasswordSelect,
+    });
+
+    // If no account found, return 404
+    if (!existingaccount) {
+      throw new APIError(
+        "No account found with this email address.",
+        HttpStatus.NotFound
+      );
+    }
+
+    // Look up the stored refresh-token record by jti
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { jti: decoded.jti },
+    });
+
+    // If token record doesn't exist or doesn't belong to account => invalid
+    if (!storedToken || storedToken.accountId !== existingaccount.id) {
+      throw new APIError("Invalid reset token", HttpStatus.Unauthorized);
+    }
+
+    // If token was already revoked -> possible reuse (token theft)
+    if (storedToken.revokedReason) {
+      // Revoke all active refresh tokens for this account as a precaution
+      await prisma.refreshToken.updateMany({
+        where: { accountId: existingaccount.id, revokedReason: null },
+        data: {
+          revokedReason: RevokedReason.TOKEN_REUSE_DETECTED,
+          revokedAt: new Date(),
+        },
+      });
+
+      throw new APIError(
+        "Reset token has been revoked.",
+        HttpStatus.Unauthorized
+      );
+    }
+
+    // Check expiration of stored refresh token (defense-in-depth)
+    if (storedToken.expiresAt && storedToken.expiresAt < new Date()) {
+      // mark it revoked for clarity
+      await prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date(), revokedReason: RevokedReason.EXPIRED },
+      });
+
+      throw new APIError(
+        "Reset token has been revoked.",
+        HttpStatus.Unauthorized
+      );
+    }
+
     // Hash the new password before storing
     const hashedPassword = await hashPassword(newPassword);
 
     // Update account: clear reset fields, set new password, ensure ACTIVE status
     const account = await prisma.account.update({
-      where: { email },
+      where: { id: decoded.accountId },
       data: {
         password: hashedPassword,
         status: Status.ACTIVE,

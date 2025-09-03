@@ -60,14 +60,23 @@ export const forgetPasswordZodSchema = z.object({
     .strict(),
 });
 
-export const resetPasswordZodSchema = z.object({
+export const verifyResetCodeZodSchema = z.object({
   body: z
     .object({
-      email: z.string().email({ message: "Invalid email address" }),
+      email: z.string().min(1, "Email is required").email("Email is not valid"),
 
       code: z
         .string()
-        .length(6, "Verification code must be exactly 6 characters"),
+        .min(1, "Code is required")
+        .regex(/^\d{6}$/, "Code must be a 6-digit number"),
+    })
+    .strict(),
+});
+
+export const resetPasswordZodSchema = z.object({
+  body: z
+    .object({
+      resetToken: z.string().min(1, "Reset token is required"),
 
       newPassword: z
         .string()

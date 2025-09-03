@@ -50,6 +50,12 @@ export interface IRefreshTokenPayload {
   jti: string;
 }
 
+export interface IResetTokenPayload {
+  purpose: string;
+  accountId: string;
+  jti: string;
+}
+
 export interface IRefreshPayload {
   refreshToken: string;
 }
@@ -62,10 +68,15 @@ export interface IForgetPasswordPayload {
   email: string;
 }
 
-export interface IResetPasswordPayload {
+export interface IVerifyPasswordResetCode {
   code: string;
+  email: string;
+}
+
+export interface IResetPasswordPayload {
   newPassword: string;
   email: string;
+  resetToken: string;
 }
 
 export interface IHandleGoogleCallbackPayload extends IAccount {}
