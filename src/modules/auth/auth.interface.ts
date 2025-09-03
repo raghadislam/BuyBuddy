@@ -1,4 +1,5 @@
 import { Role, Status, Provider } from "../../generated/prisma";
+import { IUser } from "../user/user.interface";
 export interface IAccount {
   id: string;
   name: string;
@@ -14,6 +15,7 @@ export interface IAccount {
   passwordResetCodeExpiresAt?: Date;
   provider: Provider;
   providerId?: string | null;
+  user?: IUser | null;
 }
 
 export interface ISignupPayload {
