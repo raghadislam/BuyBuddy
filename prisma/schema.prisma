@@ -18,7 +18,7 @@ datasource db {
 enum Role {
   MANAGER
   ADMIN
-  SELLER
+  BRAND
   USER
   GUEST
 }
@@ -45,6 +45,35 @@ enum Provider {
   GOOGLE
 }
 
+enum BrandStatus {
+  DRAFT // Owner started setup but hasn't submitted for verification
+  PENDING // Submitted — awaiting manual or automated review (default)
+  ACTIVE // Approved and live (can sell / receive payouts)
+  SUSPENDED // Temporarily disabled (policy issue, missing docs, etc.)
+  REJECTED // Rejected during review (owner can fix & re-submit)
+  INACTIVE // Owner intentionally deactivated the brand (soft-delete)
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  PAYPAL
+  STRIPE
+  CASH_ON_DELIVERY
+  APPLE_PAY
+  GOOGLE_PAY
+  FAWRY
+  OTHER
+}
+
+enum Category {
+  FASHION
+  HOME
+  BEAUTY
+  OTHER
+}
+
 model User {
   id                         String         @id @default(uuid())
   name                       String
@@ -61,8 +90,34 @@ model User {
   RefreshToken               RefreshToken[]
   provider                   Provider       @default(LOCAL)
   providerId                 String?
+  brands                     Brand[]
 
   @@unique([provider, providerId])
+  @@index([status])
+  @@index([role])
+}
+
+model Brand {
+  id              String      @id @default(uuid())
+  name            String
+  description     String?
+  logoUrl         String?
+  category        String?
+  status          BrandStatus @default(DRAFT)
+  instagramUrl    String?
+  tiktokUrl       String?
+  ownerName       String?
+  ownerNationalId String?
+  ownerPhone      String?
+  crn             String?
+  taxId           String?
+  paymentMethod   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  User            User        @relation(fields: [userId], references: [id])
+  userId          String
+
+  @@index([status])
 }
 
 model RefreshToken {
