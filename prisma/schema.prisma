@@ -90,7 +90,7 @@ model User {
   RefreshToken               RefreshToken[]
   provider                   Provider       @default(LOCAL)
   providerId                 String?
-  brands                     Brand[]
+  brand                      Brand?
 
   @@unique([provider, providerId])
   @@index([status])
@@ -98,12 +98,12 @@ model User {
 }
 
 model Brand {
-  id              String      @id @default(uuid())
+  id              String         @id @default(uuid())
   name            String
   description     String?
   logoUrl         String?
-  category        String?
-  status          BrandStatus @default(DRAFT)
+  category        Category?
+  status          BrandStatus    @default(DRAFT)
   instagramUrl    String?
   tiktokUrl       String?
   ownerName       String?
@@ -111,11 +111,11 @@ model Brand {
   ownerPhone      String?
   crn             String?
   taxId           String?
-  paymentMethod   String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  User            User        @relation(fields: [userId], references: [id])
-  userId          String
+  paymentMethod   PaymentMethod?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  user            User           @relation(fields: [userId], references: [id])
+  userId          String         @unique
 
   @@index([status])
 }
