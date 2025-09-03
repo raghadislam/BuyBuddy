@@ -5,12 +5,15 @@ const cookieParser = require("cookie-parser");
 import authRouter from "./modules/auth/auth.routes";
 import { notFound } from "./middlewares/notFound.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
+import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware";
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(cleanResponseMiddleware());
 
 app.use("/api/v1/auth", authRouter);
 
