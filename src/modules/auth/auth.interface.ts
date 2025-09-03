@@ -1,11 +1,27 @@
-import { Role, Status } from "../../generated/prisma";
+import { Role, Status, Provider } from "../../generated/prisma";
+export interface IAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: Role;
+  createdAt: Date;
+  updatedAt: Date;
+  status: Status;
+  verificationCode?: String;
+  verificationCodeExpiresAt?: Date;
+  passwordResetCode?: String;
+  passwordResetCodeExpiresAt?: Date;
+  provider: Provider;
+  providerId?: string | null;
+}
 
-import { IUser } from "../user/user.interface";
 export interface ISignupPayload {
   name: string;
   email: string;
   password: string;
   role: Extract<Role, "USER" | "BRAND">;
+  userName?: string;
 }
 export interface IVerfiyEmail {
   code: string;
@@ -48,4 +64,4 @@ export interface IResetPasswordPayload {
   email: string;
 }
 
-export interface IHandleGoogleCallbackPayload extends IUser {}
+export interface IHandleGoogleCallbackPayload extends IAccount {}

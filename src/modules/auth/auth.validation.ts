@@ -3,41 +3,61 @@ import { z } from "zod";
 import { Role } from "../../enums/role.enum";
 
 export const signupZodSchema = z.object({
-  body: z.object({
-    name: z
-      .string()
-      .min(4, "Name should be 3 characters at minimum")
-      .max(20, "Name cannot be more than 20 charcters"),
+  body: z
+    .object({
+      name: z
+        .string()
+        .min(4, "Name should be 3 characters at minimum")
+        .max(20, "Name cannot be more than 20 charcters"),
 
-    email: z.string().email({ message: "Invalid email address" }),
+      email: z.string().email({ message: "Invalid email address" }),
 
-    password: z.string().min(6, "password should be more than 6 characters"),
+      password: z.string().min(6, "password should be more than 6 characters"),
 
-    role: z.enum([Role.BRAND, Role.USER]),
-  }),
+      role: z.enum([Role.BRAND, Role.USER]),
+
+      userName: z
+        .string()
+        .min(3, "Username should be at least 3 characters")
+        .max(15, "Username cannot be more than 15 characters")
+        .optional(),
+    })
+    .strict(),
 });
 
 export const verifyEmailZodSchema = z.object({
-  body: z.object({
-    email: z.string().email({ message: "Invalid email address" }),
+  body: z
+    .object({
+      email: z.string().email({ message: "Invalid email address" }),
 
-    code: z
-      .string()
-      .length(6, "Verification code must be exactly 6 characters"),
-  }),
+      code: z
+        .string()
+        .length(6, "Verification code must be exactly 6 characters"),
+    })
+    .strict(),
 });
 
 export const loginZodSchema = z.object({
-  body: z.object({
-    email: z.string().min(1, "Email is required").email("Invalid email format"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-  }),
+  body: z
+    .object({
+      email: z
+        .string()
+        .min(1, "Email is required")
+        .email("Invalid email format"),
+      password: z.string().min(6, "Password must be at least 6 characters"),
+    })
+    .strict(),
 });
 
 export const forgetPasswordZodSchema = z.object({
-  body: z.object({
-    email: z.string().min(1, "Email is required").email("Invalid email format"),
-  }),
+  body: z
+    .object({
+      email: z
+        .string()
+        .min(1, "Email is required")
+        .email("Invalid email format"),
+    })
+    .strict(),
 });
 
 export const resetPasswordZodSchema = z.object({
@@ -60,5 +80,6 @@ export const resetPasswordZodSchema = z.object({
     .refine((data) => data.newPassword === data.confirmNewPassword, {
       message: "Passwords don't match",
       path: ["Password confirmations"],
-    }),
+    })
+    .strict(),
 });

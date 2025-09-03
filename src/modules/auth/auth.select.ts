@@ -1,4 +1,4 @@
-export const userSafeSelect = {
+export const accountSafeSelect = {
   id: true,
   name: true,
   email: true,
@@ -7,14 +7,16 @@ export const userSafeSelect = {
   role: true,
   status: true,
   provider: true,
+  user: true,
+  brand: true,
 };
 
-export const userLoginSelect = {
-  ...userSafeSelect,
+export const accountLoginSelect = {
+  ...accountSafeSelect,
   password: true,
 };
 
-export const userResetPasswordSelect = {
+export const accountResetPasswordSelect = {
   id: true,
   name: true,
   email: true,

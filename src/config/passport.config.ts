@@ -9,8 +9,8 @@ import APIError from "../utils/APIError";
 import { hashPassword } from "../utils/functions/hash";
 import { Status } from "../enums/status.enum";
 import { Provider } from "../enums/provider.enum";
-import { IUser } from "../modules/user/user.interface";
-import { userSafeSelect } from "../modules/user/user.select";
+import { IAccount } from "../modules/auth/auth.interface";
+import { accountSafeSelect } from "../modules/auth/auth.select";
 import { sendAccountActivatedEmail } from "../services/email/send";
 import logger from "./logger.config";
 
@@ -21,12 +21,12 @@ passport.use(
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       callbackURL: env.GOOGLE_CALLBACK_URL,
     },
-    // typed callback: the `done` (cb) signature is (err, user?, info?)
+    // typed callback: the `done` (cb) signature is (err, acciunt?, info?)
     async (
       accessToken: string,
       refreshToken: string,
       profile: Profile,
-      cb: (err: any, user?: IUser | false) => void
+      cb: (err: any, account?: IAccount | false) => void
     ) => {
       try {
         // Prefer profile._json.email_verified, fallback to profile.emails
@@ -69,15 +69,15 @@ passport.use(
         ).trim();
         const providerId = profile.id;
 
-        // Try to find existing safe user
-        const existingUser = await prisma.user.findUnique({
+        // Try to find existing safe account
+        const existingAccount = await prisma.account.findUnique({
           where: { email },
-          select: userSafeSelect,
+          select: accountSafeSelect,
         });
 
-        if (existingUser) {
+        if (existingAccount) {
           // If account suspended — bail out
-          if (existingUser.status === Status.SUSPENDED) {
+          if (existingAccount.status === Status.SUSPENDED) {
             return cb(
               new APIError(
                 "Your account has been suspended. Please contact support.",
@@ -87,34 +87,33 @@ passport.use(
             );
           }
 
-          // If the existing user was UNVERIFIED or INACTIVE but Google email is verified,
+          // If the existing account was UNVERIFIED or INACTIVE but Google email is verified,
           // promote to ACTIVE and attach provider/providerId (keep other safe fields)
-          if (existingUser.status !== Status.ACTIVE) {
-            await prisma.user.update({
+          if (existingAccount.status !== Status.ACTIVE) {
+            await prisma.account.update({
               where: { email },
               data: {
                 status: Status.ACTIVE,
                 provider: Provider.GOOGLE,
                 providerId,
-                // clear verification tokens if your schema uses them:
                 verificationCode: null,
                 verificationCodeExpiresAt: null,
               },
             });
 
-            // optionally notify user about activation
+            // optionally notify account about activation
             try {
               await sendAccountActivatedEmail(email, {
                 subject: "Activate your account",
-                name: existingUser.name,
+                name: existingAccount.name,
               });
             } catch (e) {
               // don't fail the login if email sending fails; just log it
               logger.warn("Failed to send activation email:", e);
             }
           } else {
-            // Ensure provider fields set for active user
-            await prisma.user.update({
+            // Ensure provider fields set for active account
+            await prisma.account.update({
               where: { email },
               data: {
                 provider: Provider.GOOGLE,
@@ -123,17 +122,17 @@ passport.use(
             });
           }
 
-          // Return the safe-selected user (re-fetch with select)
-          const user = await prisma.user.findUnique({
+          // Return the safe-selected account (re-fetch with select)
+          const account = await prisma.account.findUnique({
             where: { email },
-            select: userSafeSelect,
+            select: accountSafeSelect,
           });
 
-          return cb(null, user as IUser);
+          return cb(null, account as IAccount);
         }
 
-        // No existing user -> create (use select to avoid returning password)
-        const created = await prisma.user.create({
+        // No existing account -> create (use select to avoid returning password)
+        const created = await prisma.account.create({
           data: {
             name,
             email,
@@ -142,10 +141,10 @@ passport.use(
             providerId,
             status: Status.ACTIVE,
           },
-          select: userSafeSelect,
+          select: accountSafeSelect,
         });
 
-        return cb(null, created as IUser);
+        return cb(null, created as IAccount);
       } catch (err) {
         // Passport expects the error to be passed to the callback, not thrown.
         logger.error("GoogleStrategy error:", err);

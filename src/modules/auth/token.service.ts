@@ -44,7 +44,7 @@ export const generateRefreshToken = async (
       jti: payload.jti,
       token: hashed,
       expiresAt,
-      userId: payload.id,
+      accountId: payload.id,
     },
   });
 
