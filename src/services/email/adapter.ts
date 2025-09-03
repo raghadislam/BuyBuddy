@@ -5,7 +5,7 @@ import env from "../../config/env.config";
 
 export function createMailProvider(): MailProvider {
   switch (env.NODE_ENV) {
-    case "development":
+    case "production":
       return new GmailProvider();
     case "development":
     default:
