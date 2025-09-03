@@ -18,7 +18,7 @@ export const signupZodSchema = z.object({
         .string()
         .min(6, "password should be more than 6 characters"),
 
-      role: z.enum([Role.SELLER, Role.USER]),
+      role: z.enum([Role.BRAND, Role.USER]),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: "Passwords don't match",

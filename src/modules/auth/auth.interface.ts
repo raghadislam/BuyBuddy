@@ -5,7 +5,7 @@ export interface ISignupPayload {
   name: string;
   email: string;
   password: string;
-  role: Extract<Role, "USER" | "SELLER">;
+  role: Extract<Role, "USER" | "BRAND">;
 }
 export interface IVerfiyEmail {
   code: string;
