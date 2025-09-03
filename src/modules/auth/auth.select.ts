@@ -23,3 +23,9 @@ export const accountResetPasswordSelect = {
   passwordResetCode: true,
   passwordResetCodeExpiresAt: true,
 };
+
+export const profileSelect = {
+  ...accountSafeSelect,
+  user: false,
+  brand: false,
+};
