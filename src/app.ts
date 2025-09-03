@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 
 import authRouter from "./modules/auth/auth.routes";
 import userRouter from "./modules/user/user.routes";
+import brandRouter from "./modules/brand/brand.routes";
 import { notFound } from "./middlewares/notFound.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware";
@@ -18,6 +19,7 @@ app.use(cleanResponseMiddleware());
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/brands", brandRouter);
 
 // 404 catcher — should come after routes
 app.use(notFound);
