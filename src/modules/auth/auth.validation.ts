@@ -3,27 +3,18 @@ import { z } from "zod";
 import { Role } from "../../enums/role.enum";
 
 export const signupZodSchema = z.object({
-  body: z
-    .object({
-      name: z
-        .string()
-        .min(4, "Name should be 3 characters at minimum")
-        .max(20, "Name cannot be more than 20 charcters"),
+  body: z.object({
+    name: z
+      .string()
+      .min(4, "Name should be 3 characters at minimum")
+      .max(20, "Name cannot be more than 20 charcters"),
 
-      email: z.string().email({ message: "Invalid email address" }),
+    email: z.string().email({ message: "Invalid email address" }),
 
-      password: z.string().min(6, "password should be more than 6 characters"),
+    password: z.string().min(6, "password should be more than 6 characters"),
 
-      confirmPassword: z
-        .string()
-        .min(6, "password should be more than 6 characters"),
-
-      role: z.enum([Role.BRAND, Role.USER]),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: "Passwords don't match",
-      path: ["Password confirmations"],
-    }),
+    role: z.enum([Role.BRAND, Role.USER]),
+  }),
 });
 
 export const verifyEmailZodSchema = z.object({
