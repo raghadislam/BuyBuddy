@@ -1,4 +1,5 @@
 import { Role, Status, Provider } from "../../generated/prisma";
+import { IBrand } from "../brand/brand.interface";
 import { IUser } from "../user/user.interface";
 export interface IAccount {
   id: string;
@@ -16,6 +17,7 @@ export interface IAccount {
   provider: Provider;
   providerId?: string | null;
   user?: IUser | null;
+  brand?: IBrand | null;
 }
 
 export interface ISignupPayload {
