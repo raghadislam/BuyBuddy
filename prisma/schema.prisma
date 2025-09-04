@@ -111,6 +111,7 @@ model Account {
   ConversationParticipant    PrivateConversationParticipant[]
   sentPrivateMessages        PrivateMessage[]                 @relation("SentMessages")
   reactedMessages            PrivateMessage[]                 @relation("ReactedMessages")
+  privateMessageVisibilities PrivateMessageVisibility[]
 
   @@unique([provider, providerId])
   @@index([status])
@@ -207,6 +208,7 @@ model PrivateMessage {
   reactionType   ReactionType?
   reactedById    String?
   reactedBy      Account?                   @relation("ReactedMessages", fields: [reactedById], references: [id], onDelete: SetNull)
+  visibilities   PrivateMessageVisibility[]
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
@@ -221,5 +223,21 @@ model PrivateMessageAttachment {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
+  @@index([messageId])
+}
+
+model PrivateMessageVisibility {
+  id        String         @id @default(uuid())
+  message   PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId String
+  account   Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+  readAt    DateTime?
+  deletedAt DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([messageId, accountId])
+  @@index([accountId])
   @@index([messageId])
 }
