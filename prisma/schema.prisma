@@ -184,6 +184,8 @@ model PrivateConversationParticipant {
   account        Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
   accountId      String
   unreadCount    Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   @@unique([conversationId, accountId])
   @@index([accountId])
@@ -198,6 +200,7 @@ model PrivateMessage {
   content        String
   contentType    ContentType
   createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
   readAt         DateTime?
   deletedAt      DateTime?
   attachments    PrivateMessageAttachment[]
@@ -216,6 +219,7 @@ model PrivateMessageAttachment {
   url       String
   mimeType  String?
   createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@index([messageId])
 }
