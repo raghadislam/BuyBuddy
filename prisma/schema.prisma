@@ -109,7 +109,7 @@ model Account {
   user                       User?
   brand                      Brand?
   ConversationParticipant    PrivateConversationParticipant[]
-  sentMessages               PrivateMessage[]                 @relation("SentMessages")
+  sentPrivateMessages        PrivateMessage[]                 @relation("SentMessages")
   reactedMessages            PrivateMessage[]                 @relation("ReactedMessages")
 
   @@unique([provider, providerId])
@@ -167,18 +167,14 @@ model RefreshToken {
 }
 
 model PrivateConversation {
-  id            String                           @id @default(uuid())
-  createdAt     DateTime                         @default(now())
-  updatedAt     DateTime                         @updatedAt
-  archivedAt    DateTime?
-  lastMessageId String?                          @unique
-  lastMessage   PrivateMessage?                  @relation("ConversationLastMessage", fields: [lastMessageId], references: [id], onDelete: SetNull)
-  lastMessageAt DateTime?
-  participants  PrivateConversationParticipant[]
-  messages      PrivateMessage[]
+  id           String                           @id @default(uuid())
+  createdAt    DateTime                         @default(now())
+  updatedAt    DateTime                         @updatedAt
+  archivedAt   DateTime?
+  participants PrivateConversationParticipant[]
+  messages     PrivateMessage[]
 
   @@index([updatedAt])
-  @@index([lastMessageAt])
 }
 
 model PrivateConversationParticipant {
@@ -194,21 +190,20 @@ model PrivateConversationParticipant {
 }
 
 model PrivateMessage {
-  id                  String                     @id @default(uuid())
-  conversation        PrivateConversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  conversationId      String
-  sender              Account?                   @relation("SentMessages", fields: [senderId], references: [id], onDelete: SetNull)
-  senderId            String?
-  content             String?
-  contentType         ContentType
-  createdAt           DateTime                   @default(now())
-  readAt              DateTime?
-  deletedAt           DateTime?
-  attachments         PrivateMessageAttachment[]
-  reactionType        ReactionType?
-  reactedById         String?
-  reactedBy           Account?                   @relation("ReactedMessages", fields: [reactedById], references: [id], onDelete: SetNull)
-  lastForConversation PrivateConversation?       @relation("ConversationLastMessage")
+  id             String                     @id @default(uuid())
+  conversation   PrivateConversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  sender         Account                    @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId       String
+  content        String
+  contentType    ContentType
+  createdAt      DateTime                   @default(now())
+  readAt         DateTime?
+  deletedAt      DateTime?
+  attachments    PrivateMessageAttachment[]
+  reactionType   ReactionType?
+  reactedById    String?
+  reactedBy      Account?                   @relation("ReactedMessages", fields: [reactedById], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
@@ -220,7 +215,6 @@ model PrivateMessageAttachment {
   messageId String
   url       String
   mimeType  String?
-  size      Int?
   createdAt DateTime       @default(now())
 
   @@index([messageId])
