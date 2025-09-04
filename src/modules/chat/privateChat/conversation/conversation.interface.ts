@@ -6,6 +6,6 @@ export interface IPrivateConversation {
   createdAt: Date;
   updatedAt: Date;
   archivedAt?: Date;
-  participants: IPrivateConversationParticipant;
-  messages: IPrivateMessage;
+  participants: IPrivateConversationParticipant[];
+  messages: IPrivateMessage[];
 }
