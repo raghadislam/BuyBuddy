@@ -3,12 +3,18 @@ import { z } from "zod";
 export const getPrivateMessagesZodSchema = z.object({
   params: z
     .object({
-      conversationId: z.string().min(1, "conversationId is required"),
+      conversationId: z
+        .string()
+        .min(1, "conversationId is required")
+        .uuid({ message: "recipientId must be a valid UUID" }),
     })
     .strict(),
   query: z
     .object({
-      cursor: z.string().optional(),
+      cursor: z
+        .string()
+        .uuid({ message: "cursor must be a valid UUID" })
+        .optional(),
 
       since: z
         .string()

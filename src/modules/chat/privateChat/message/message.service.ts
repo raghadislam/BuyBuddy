@@ -8,6 +8,18 @@ class PrivateMessage {
   async getMessages(payload: IGetPrivateMessages) {
     const { accountId, conversationId, cursor, since, limit = 50 } = payload;
 
+    if (cursor) {
+      const exists = await prisma.privateMessage.findUnique({
+        where: { id: cursor },
+        select: { id: true },
+      });
+      if (!exists) {
+        throw new APIError(
+          "Invalid cursor: message not found",
+          HttpStatus.BadRequest
+        );
+      }
+    }
     const pageSize = Math.min(Math.max(limit, 1), 100);
     const take = pageSize + 1;
 
