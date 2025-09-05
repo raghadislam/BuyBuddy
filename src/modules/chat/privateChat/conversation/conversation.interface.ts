@@ -23,3 +23,12 @@ export interface IGetPrivateConversationPayload {
 export interface IGetAllPrivateConversationsPayload {
   userId: string;
 }
+
+export interface IAnyPrivateConversation {
+  id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  archivedAt?: Date;
+  participants?: IPrivateConversationParticipant[];
+  messages?: IPrivateMessage[];
+}

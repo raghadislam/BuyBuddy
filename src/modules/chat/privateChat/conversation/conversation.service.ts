@@ -6,11 +6,58 @@ import {
   IGetOrCreatePrivateConversationPayload,
   IGetPrivateConversationPayload,
   IGetAllPrivateConversationsPayload,
+  IPrivateConversation,
 } from "./conversation.interface";
 import { Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
 
 class PrivateConverstionService {
+  private formatConversation(
+    convo: IPrivateConversation,
+    userId: string,
+    needLastMessage: boolean = false
+  ) {
+    const otherKey = "other";
+    const participantsArr: any[] = convo.participants ?? [];
+    const map = new Map<string, any>();
+
+    const mePartRaw =
+      participantsArr.find((p) => p.accountId === userId) ?? null;
+    const otherPartRaw =
+      participantsArr.find((p) => p.accountId !== userId) ?? null;
+
+    const participantsObj: any = {
+      me: mePartRaw,
+    };
+    participantsObj[otherKey] = otherPartRaw;
+
+    const messages = (convo.messages ?? []).map((m: any) => {
+      const senderResolved = m.senderId ? map.get(m.senderId) ?? null : null;
+      return {
+        ...m,
+        sender: senderResolved,
+      };
+    });
+
+    const lastMessage = messages.length && needLastMessage ? messages[0] : null;
+
+    return {
+      id: convo.id,
+      createdAt: convo.createdAt,
+      updatedAt: convo.updatedAt,
+      participants: participantsObj,
+      messages,
+      lastMessage,
+    };
+  }
+
+  private formatConversationsList(
+    convos: IPrivateConversation[],
+    userId: string
+  ) {
+    return convos.map((c) => this.formatConversation(c, userId, true));
+  }
+
   /*
    * Find an existing private conversation between two accounts (userId and recipientId)
    * that the requesting user can see (no deleted messages), or create one if it doesn't exist.
@@ -106,7 +153,13 @@ class PrivateConverstionService {
         participants: existing.participants?.map((p) => p.accountId),
         messagesCount: existing.messages?.length ?? 0,
       });
-      return { conversation: existing, isNew: false }; // return the conversation object as-is
+      return {
+        conversation: this.formatConversation(
+          existing as IPrivateConversation,
+          userId
+        ),
+        isNew: false,
+      };
     }
 
     // No existing conversation was found: create a new conversation with both participants.
@@ -137,7 +190,13 @@ class PrivateConverstionService {
       conversationId: conversation.id,
       participants: conversation.participants?.map((p) => p.accountId),
     });
-    return { conversation, isNew: true };
+    return {
+      conversation: this.formatConversation(
+        conversation as IPrivateConversation,
+        userId
+      ),
+      isNew: true,
+    };
   }
 
   async getConversation(payload: IGetPrivateConversationPayload) {
@@ -204,7 +263,10 @@ class PrivateConverstionService {
       participants: conversation.participants?.map((p) => p.accountId),
       messagesCount: conversation.messages?.length ?? 0,
     });
-    return conversation;
+    return this.formatConversation(
+      conversation as IPrivateConversation,
+      userId
+    );
   }
 
   async getAllConversations(payload: IGetAllPrivateConversationsPayload) {
@@ -255,7 +317,10 @@ class PrivateConverstionService {
     });
 
     logger.info(`Found private conversations for userID: ${userId}`);
-    return conversations;
+    return this.formatConversationsList(
+      conversations as IPrivateConversation[],
+      userId
+    );
   }
 }
 
