@@ -1,5 +1,5 @@
 import { IPrivateConversationParticipant } from "../conversationParticipant/conversationParticipant.interface";
-import { IPrivateMessage } from "../message/messge.interface";
+import { IPrivateMessage } from "../message/message.interface";
 
 export interface IPrivateConversation {
   id: string;

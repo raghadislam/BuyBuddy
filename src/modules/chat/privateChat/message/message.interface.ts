@@ -21,3 +21,11 @@ export interface IPrivateMessage {
   reactedBy?: IAccount;
   visibilities: IPrivateMessageVisibility[];
 }
+
+export interface IGetPrivateMessages {
+  accountId: string;
+  conversationId: string;
+  limit?: number;
+  cursor?: string;
+  since?: Date;
+}

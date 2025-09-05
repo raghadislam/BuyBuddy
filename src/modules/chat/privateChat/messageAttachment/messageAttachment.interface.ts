@@ -1,4 +1,4 @@
-import { IPrivateMessage } from "../message/messge.interface";
+import { IPrivateMessage } from "../message/message.interface";
 
 export interface IPrivateMessageAttachment {
   id: string;

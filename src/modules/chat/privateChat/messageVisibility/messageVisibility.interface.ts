@@ -1,5 +1,5 @@
 import { IAccount } from "../../../auth/auth.interface";
-import { IPrivateMessage } from "../message/messge.interface";
+import { IPrivateMessage } from "../message/message.interface";
 
 export interface IPrivateMessageVisibility {
   id: string;
