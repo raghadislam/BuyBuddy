@@ -17,7 +17,7 @@ export const getOrCreatePrivateConversation: RequestHandler = async (
 ) => {
   const payload: IGetOrCreatePrivateConversationPayload = {
     recipientId: req.params.recipientId,
-    userId: req.account?.id!,
+    accountId: req.account?.id!,
   };
   const { conversation, isNew } =
     await privateConverstionService.getOrCreateConversation(payload);
@@ -36,7 +36,7 @@ export const getOrCreatePrivateConversation: RequestHandler = async (
 export const getPrivateConversation: RequestHandler = async (req, res) => {
   const payload: IGetPrivateConversationPayload = {
     conversationId: req.params.conversationId,
-    userId: req.account?.id!,
+    accountId: req.account?.id!,
   };
   const conversation = await privateConverstionService.getConversation(payload);
 
@@ -51,7 +51,7 @@ export const getPrivateConversation: RequestHandler = async (req, res) => {
 
 export const getAllprivateConversations: RequestHandler = async (req, res) => {
   const payload: IGetAllPrivateConversationsPayload = {
-    userId: req.account?.id!,
+    accountId: req.account?.id!,
   };
   const conversations = await privateConverstionService.getAllConversations(
     payload
@@ -68,7 +68,7 @@ export const getAllprivateConversations: RequestHandler = async (req, res) => {
 
 export const archivePrivateConversation: RequestHandler = async (req, res) => {
   const payload: IArchivePrivateConversation = {
-    userId: req.account?.id!,
+    accountId: req.account?.id!,
     conversationId: req.params.conversationId,
   };
   const data = await privateConverstionService.archiveConversation(payload);
@@ -85,7 +85,7 @@ export const unarchivePrivateConversation: RequestHandler = async (
   res
 ) => {
   const payload: IUnarchivePrivateConversation = {
-    userId: req.account?.id!,
+    accountId: req.account?.id!,
     conversationId: req.params.conversationId,
   };
   const data = await privateConverstionService.unarchiveConversation(payload);

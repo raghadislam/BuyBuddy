@@ -10,21 +10,21 @@ import {
   IArchivePrivateConversation,
   IUnarchivePrivateConversation,
 } from "./conversation.interface";
-import { Status } from "../../../../generated/prisma";
+import { Role, Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
 
 class PrivateConverstionService {
   private formatConversation(
     conversation: IPrivateConversation,
-    userId: string
+    accountId: string
   ) {
     const otherKey = "other";
     const participantsArr: any[] = conversation.participants ?? [];
 
     const mePartRaw =
-      participantsArr.find((p) => p.accountId === userId) ?? null;
+      participantsArr.find((p) => p.accountId === accountId) ?? null;
     const otherPartRaw =
-      participantsArr.find((p) => p.accountId !== userId) ?? null;
+      participantsArr.find((p) => p.accountId !== accountId) ?? null;
 
     const participantsObj: any = {
       me: mePartRaw,
@@ -37,19 +37,19 @@ class PrivateConverstionService {
 
   private formatConversationsList(
     conversations: IPrivateConversation[],
-    userId: string
+    accountId: string
   ) {
-    return conversations.map((c) => this.formatConversation(c, userId));
+    return conversations.map((c) => this.formatConversation(c, accountId));
   }
 
   /*
-   * Find an existing private conversation between two accounts (userId and recipientId)
-   * that the requesting user can see (no deleted messages), or create one if it doesn't exist.
+   * Find an existing private conversation between two accounts (accountId and recipientId)
+   * that the requesting account can see (no deleted messages), or create one if it doesn't exist.
    */
   async getOrCreateConversation(
     payload: IGetOrCreatePrivateConversationPayload
   ) {
-    const { userId, recipientId } = payload;
+    const { accountId, recipientId } = payload;
 
     // validate recipient exists
     const recipient = await prisma.account.findUnique({
@@ -64,7 +64,7 @@ class PrivateConverstionService {
       throw new APIError("Recipient not available.", HttpStatus.BadRequest);
 
     // Disallow creating a conversation with the same account ID.
-    if (userId === recipientId) {
+    if (accountId === recipientId) {
       throw new APIError(
         "Cannot create a conversation with the same account.",
         HttpStatus.BadRequest
@@ -74,8 +74,8 @@ class PrivateConverstionService {
     const existing = await prisma.privateConversation.findFirst({
       where: {
         AND: [
-          // ensure userId is present as a participant
-          { participants: { some: { accountId: userId } } },
+          // ensure accountId is present as a participant
+          { participants: { some: { accountId: accountId } } },
 
           // ensure recipientId is present as a participant
           { participants: { some: { accountId: recipientId } } },
@@ -83,7 +83,7 @@ class PrivateConverstionService {
           // ensure there are no participants outside the two IDs
           {
             participants: {
-              every: { accountId: { in: [userId, recipientId] } },
+              every: { accountId: { in: [accountId, recipientId] } },
             },
           },
         ],
@@ -96,14 +96,14 @@ class PrivateConverstionService {
           },
         },
 
-        // Include recent messages that are visible to the requesting user.
+        // Include recent messages that are visible to the requesting account.
         messages: {
           where: {
-            // Only messages that have a visibility row for this user and
-            // where deletedAt is null (i.e., the user hasn't deleted them).
+            // Only messages that have a visibility row for this account and
+            // where deletedAt is null (i.e., the account hasn't deleted them).
             visibilities: {
               some: {
-                accountId: userId,
+                accountId: accountId,
                 deletedAt: null,
               },
             },
@@ -112,14 +112,14 @@ class PrivateConverstionService {
             // For each message, include only the visibility row for the requester
             // to reduce payload size and show read/deleted metadata.
             visibilities: {
-              where: { accountId: userId },
-              take: 1, // only need the requesting user's visibility
+              where: { accountId: accountId },
+              take: 1, // only need the requesting account's visibility
             },
 
             // Include any attachments associated with each message.
             attachments: true,
 
-            // Include a small subset of fields for users who reacted to the message.
+            // Include a small subset of fields for accounts who reacted to the message.
             reactedBy: { select: { id: true, name: true, email: true } },
           },
 
@@ -140,7 +140,7 @@ class PrivateConverstionService {
       return {
         conversation: this.formatConversation(
           existing as IPrivateConversation,
-          userId
+          accountId
         ),
         isNew: false,
       };
@@ -152,7 +152,7 @@ class PrivateConverstionService {
         participants: {
           create: [
             {
-              accountId: userId, // create participant row for requesting user
+              accountId: accountId, // create participant row for requesting account
             },
             {
               accountId: recipientId, // create participant row for recipient
@@ -177,20 +177,20 @@ class PrivateConverstionService {
     return {
       conversation: this.formatConversation(
         conversation as IPrivateConversation,
-        userId
+        accountId
       ),
       isNew: true,
     };
   }
 
   async getConversation(payload: IGetPrivateConversationPayload) {
-    const { userId, conversationId } = payload;
+    const { accountId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
       where: {
         id: conversationId,
-        // ensure userId is present as a participant
-        participants: { some: { accountId: userId } },
+        // ensure accountId is present as a participant
+        participants: { some: { accountId: accountId } },
       },
       include: {
         // Include participants and their related account data for context.
@@ -200,14 +200,14 @@ class PrivateConverstionService {
           },
         },
 
-        // Include recent messages that are visible to the requesting user.
+        // Include recent messages that are visible to the requesting account.
         messages: {
           where: {
-            // Only messages that have a visibility row for this user and
-            // where deletedAt is null (i.e., the user hasn't deleted them).
+            // Only messages that have a visibility row for this account and
+            // where deletedAt is null (i.e., the account hasn't deleted them).
             visibilities: {
               some: {
-                accountId: userId,
+                accountId: accountId,
                 deletedAt: null,
               },
             },
@@ -216,14 +216,14 @@ class PrivateConverstionService {
             // For each message, include only the visibility row for the requester
             // to reduce payload size and show read/deleted metadata.
             visibilities: {
-              where: { accountId: userId },
-              take: 1, // only need the requesting user's visibility
+              where: { accountId: accountId },
+              take: 1, // only need the requesting account's visibility
             },
 
             // Include any attachments associated with each message.
             attachments: true,
 
-            // Include a small subset of fields for users who reacted to the message.
+            // Include a small subset of fields for accounts who reacted to the message.
             reactedBy: { select: { id: true, name: true, email: true } },
           },
 
@@ -234,7 +234,7 @@ class PrivateConverstionService {
       },
     });
 
-    // Validate that the conversation exists and belongs to the requesting user
+    // Validate that the conversation exists and belongs to the requesting account
     if (!conversation) {
       throw new APIError(
         "You are not authorized to access this conversation or it does not exist",
@@ -249,16 +249,16 @@ class PrivateConverstionService {
     });
     return this.formatConversation(
       conversation as IPrivateConversation,
-      userId
+      accountId
     );
   }
 
   async getAllConversations(payload: IGetAllPrivateConversationsPayload) {
-    const { userId } = payload;
+    const { accountId } = payload;
     const conversations = await prisma.privateConversation.findMany({
       where: {
-        // ensure userId is present as a participant
-        participants: { some: { accountId: userId } },
+        // ensure accountId is present as a participant
+        participants: { some: { accountId: accountId } },
       },
       include: {
         // Include participants and their related account data for context.
@@ -268,14 +268,14 @@ class PrivateConverstionService {
           },
         },
 
-        // Include last messages that are visible to the requesting user.
+        // Include last messages that are visible to the requesting account.
         messages: {
           where: {
-            // Only messages that have a visibility row for this user and
-            // where deletedAt is null (i.e., the user hasn't deleted them).
+            // Only messages that have a visibility row for this account and
+            // where deletedAt is null (i.e., the account hasn't deleted them).
             visibilities: {
               some: {
-                accountId: userId,
+                accountId: accountId,
                 deletedAt: null,
               },
             },
@@ -289,31 +289,31 @@ class PrivateConverstionService {
             // For each message, include only the visibility row for the requester
             // to reduce payload size and show read/deleted metadata.
             visibilities: {
-              where: { accountId: userId },
-              take: 1, // only need the requesting user's visibility
+              where: { accountId: accountId },
+              take: 1, // only need the requesting account's visibility
             },
 
-            // Include a small subset of fields for users who reacted to the message.
+            // Include a small subset of fields for accounts who reacted to the message.
             reactedBy: { select: { id: true, name: true, email: true } },
           },
         },
       },
     });
 
-    logger.info(`Found private conversations for userID: ${userId}`);
+    logger.info(`Found private conversations for accountId: ${accountId}`);
     return this.formatConversationsList(
       conversations as IPrivateConversation[],
-      userId
+      accountId
     );
   }
 
   async archiveConversation(payload: IArchivePrivateConversation) {
-    const { userId, conversationId } = payload;
+    const { accountId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
       where: {
         id: conversationId,
-        participants: { some: { accountId: userId } },
+        participants: { some: { accountId: accountId } },
       },
     });
 
@@ -339,12 +339,12 @@ class PrivateConverstionService {
   }
 
   async unarchiveConversation(payload: IUnarchivePrivateConversation) {
-    const { userId, conversationId } = payload;
+    const { accountId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
       where: {
         id: conversationId,
-        participants: { some: { accountId: userId } },
+        participants: { some: { accountId: accountId } },
       },
     });
 

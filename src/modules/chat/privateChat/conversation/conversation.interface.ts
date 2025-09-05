@@ -11,17 +11,17 @@ export interface IPrivateConversation {
 }
 
 export interface IGetOrCreatePrivateConversationPayload {
-  userId: string;
+  accountId: string;
   recipientId: string;
 }
 
 export interface IGetPrivateConversationPayload {
-  userId: string;
+  accountId: string;
   conversationId: string;
 }
 
 export interface IGetAllPrivateConversationsPayload {
-  userId: string;
+  accountId: string;
 }
 
 export interface IAnyPrivateConversation {
@@ -34,7 +34,7 @@ export interface IAnyPrivateConversation {
 }
 
 export interface IArchivePrivateConversation {
-  userId: string;
+  accountId: string;
   conversationId: string;
 }
 
