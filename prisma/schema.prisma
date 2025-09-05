@@ -79,24 +79,39 @@ enum Gender {
   FEMALE
 }
 
+enum ContentType {
+  TEXT
+  IMAGE
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  ADMIRE
+}
+
 model Account {
-  id                         String         @id @default(uuid())
+  id                         String                           @id @default(uuid())
   name                       String
-  email                      String         @unique
+  email                      String                           @unique
   password                   String
-  role                       Role           @default(USER)
-  createdAt                  DateTime       @default(now())
-  updatedAt                  DateTime       @updatedAt
-  status                     Status         @default(UNVERIFIED)
+  role                       Role                             @default(USER)
+  createdAt                  DateTime                         @default(now())
+  updatedAt                  DateTime                         @updatedAt
+  status                     Status                           @default(UNVERIFIED)
   verificationCode           String?
   verificationCodeExpiresAt  DateTime?
   passwordResetCode          String?
   passwordResetCodeExpiresAt DateTime?
   refreshTokens              RefreshToken[]
-  provider                   Provider       @default(LOCAL)
+  provider                   Provider                         @default(LOCAL)
   providerId                 String?
   user                       User?
   brand                      Brand?
+  ConversationParticipant    PrivateConversationParticipant[]
+  sentPrivateMessages        PrivateMessage[]                 @relation("SentMessages")
+  reactedMessages            PrivateMessage[]                 @relation("ReactedMessages")
+  privateMessageVisibilities PrivateMessageVisibility[]
 
   @@unique([provider, providerId])
   @@index([status])
@@ -150,4 +165,79 @@ model RefreshToken {
   jti           String         @unique
 
   @@index([expiresAt])
+}
+
+model PrivateConversation {
+  id           String                           @id @default(uuid())
+  createdAt    DateTime                         @default(now())
+  updatedAt    DateTime                         @updatedAt
+  archivedAt   DateTime?
+  participants PrivateConversationParticipant[]
+  messages     PrivateMessage[]
+
+  @@index([updatedAt])
+}
+
+model PrivateConversationParticipant {
+  id             String              @id @default(uuid())
+  conversation   PrivateConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  account        Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId      String
+  unreadCount    Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([conversationId, accountId])
+  @@index([accountId])
+}
+
+model PrivateMessage {
+  id             String                     @id @default(uuid())
+  conversation   PrivateConversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  sender         Account                    @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId       String
+  content        String
+  contentType    ContentType
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  readAt         DateTime?
+  deletedAt      DateTime?
+  attachments    PrivateMessageAttachment[]
+  reactionType   ReactionType?
+  reactedById    String?
+  reactedBy      Account?                   @relation("ReactedMessages", fields: [reactedById], references: [id], onDelete: SetNull)
+  visibilities   PrivateMessageVisibility[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model PrivateMessageAttachment {
+  id        String         @id @default(uuid())
+  message   PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId String
+  url       String
+  mimeType  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([messageId])
+}
+
+model PrivateMessageVisibility {
+  id        String         @id @default(uuid())
+  message   PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId String
+  account   Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+  readAt    DateTime?
+  deletedAt DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([messageId, accountId])
+  @@index([accountId])
+  @@index([messageId])
 }
