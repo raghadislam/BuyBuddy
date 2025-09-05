@@ -7,6 +7,7 @@ import {
   refresh,
   logout,
   forgetPassword,
+  verifyResetCode,
   resetPassword,
   googleCallbackHandler,
 } from "./auth.controller";
@@ -18,6 +19,7 @@ import {
   loginZodSchema,
   forgetPasswordZodSchema,
   resetPasswordZodSchema,
+  verifyResetCodeZodSchema,
 } from "./auth.validation";
 import passport from "../../config/passport.config";
 
@@ -37,6 +39,12 @@ router.post(
   "/forget-password",
   validate(forgetPasswordZodSchema),
   forgetPassword
+);
+
+router.post(
+  "/verify-reset-code",
+  validate(verifyResetCodeZodSchema),
+  verifyResetCode
 );
 
 router.post("/reset-password", validate(resetPasswordZodSchema), resetPassword);

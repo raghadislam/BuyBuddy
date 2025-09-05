@@ -3,5 +3,5 @@ export enum Role {
   USER = "USER",
   GUEST = "GUEST",
   MANAGER = "MANAGER",
-  SELLER = "SELLER",
+  BRAND = "BRAND",
 }
