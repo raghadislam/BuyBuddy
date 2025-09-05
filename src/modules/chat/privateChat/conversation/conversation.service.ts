@@ -3,9 +3,9 @@ import logger from "../../../../config/logger.config";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
 import APIError from "../../../../utils/APIError";
 import {
-  IGetOrCreatePrivateConversation,
-  IGetPrivateConversation,
-  IGetAllPrivateConversations,
+  IGetOrCreatePrivateConversationPayload,
+  IGetPrivateConversationPayload,
+  IGetAllPrivateConversationsPayload,
 } from "./conversation.interface";
 import { Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
@@ -15,7 +15,9 @@ class PrivateConverstionService {
    * Find an existing private conversation between two accounts (userId and recipientId)
    * that the requesting user can see (no deleted messages), or create one if it doesn't exist.
    */
-  async getOrCreateConversation(payload: IGetOrCreatePrivateConversation) {
+  async getOrCreateConversation(
+    payload: IGetOrCreatePrivateConversationPayload
+  ) {
     const { userId, recipientId } = payload;
 
     // validate recipient exists
@@ -138,7 +140,7 @@ class PrivateConverstionService {
     return { conversation, isNew: true };
   }
 
-  async getConversation(payload: IGetPrivateConversation) {
+  async getConversation(payload: IGetPrivateConversationPayload) {
     const { userId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
@@ -205,7 +207,7 @@ class PrivateConverstionService {
     return conversation;
   }
 
-  async getAllConversations(payload: IGetAllPrivateConversations) {
+  async getAllConversations(payload: IGetAllPrivateConversationsPayload) {
     const { userId } = payload;
     const conversations = await prisma.privateConversation.findMany({
       where: {

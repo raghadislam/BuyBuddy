@@ -1,9 +1,9 @@
 import { RequestHandler } from "express";
 
 import {
-  IGetOrCreatePrivateConversation,
-  IGetPrivateConversation,
-  IGetAllPrivateConversations,
+  IGetOrCreatePrivateConversationPayload,
+  IGetPrivateConversationPayload,
+  IGetAllPrivateConversationsPayload,
 } from "./conversation.interface";
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
@@ -13,7 +13,7 @@ export const getOrCreatePrivateConversation: RequestHandler = async (
   req,
   res
 ) => {
-  const payload: IGetOrCreatePrivateConversation = {
+  const payload: IGetOrCreatePrivateConversationPayload = {
     recipientId: req.params.recipientId,
     userId: req.account?.id!,
   };
@@ -32,7 +32,7 @@ export const getOrCreatePrivateConversation: RequestHandler = async (
 };
 
 export const getPrivateConversation: RequestHandler = async (req, res) => {
-  const payload: IGetPrivateConversation = {
+  const payload: IGetPrivateConversationPayload = {
     conversationId: req.params.conversationId,
     userId: req.account?.id!,
   };
@@ -48,7 +48,7 @@ export const getPrivateConversation: RequestHandler = async (req, res) => {
 };
 
 export const getAllprivateConversations: RequestHandler = async (req, res) => {
-  const payload: IGetAllPrivateConversations = {
+  const payload: IGetAllPrivateConversationsPayload = {
     userId: req.account?.id!,
   };
   const conversations = await privateConverstionService.getAllConversations(

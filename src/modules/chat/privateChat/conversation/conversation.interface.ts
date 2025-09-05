@@ -10,16 +10,16 @@ export interface IPrivateConversation {
   messages: IPrivateMessage[];
 }
 
-export interface IGetOrCreatePrivateConversation {
+export interface IGetOrCreatePrivateConversationPayload {
   userId: string;
   recipientId: string;
 }
 
-export interface IGetPrivateConversation {
+export interface IGetPrivateConversationPayload {
   userId: string;
   conversationId: string;
 }
 
-export interface IGetAllPrivateConversations {
+export interface IGetAllPrivateConversationsPayload {
   userId: string;
 }
