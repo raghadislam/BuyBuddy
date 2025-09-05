@@ -1,10 +1,10 @@
-import { IUser } from "../modules/user/user.interface";
+import { IAccount } from "../modules/auth/auth.interface";
 
 declare global {
   namespace Express {
-    export interface User extends IUser {}
+    export interface Account extends IAccount {}
     interface Request {
-      user?: IUser;
+      account?: IAccount;
     }
   }
 }

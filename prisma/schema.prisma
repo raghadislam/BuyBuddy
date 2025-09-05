@@ -18,7 +18,7 @@ datasource db {
 enum Role {
   MANAGER
   ADMIN
-  SELLER
+  BRAND
   USER
   GUEST
 }
@@ -31,7 +31,7 @@ enum Status {
 }
 
 enum RevokedReason {
-  USER_LOGOUT
+  ACCOUNT_LOGOUT
   EXPIRED
   ADMIN_REVOKED
   PASSWORD_CHANGE
@@ -45,7 +45,41 @@ enum Provider {
   GOOGLE
 }
 
-model User {
+enum BrandStatus {
+  DRAFT // Owner started setup but hasn't submitted for verification
+  PENDING // Submitted — awaiting manual or automated review (default)
+  ACTIVE // Approved and live (can sell / receive payouts)
+  SUSPENDED // Temporarily disabled (policy issue, missing docs, etc.)
+  REJECTED // Rejected during review (owner can fix & re-submit)
+  INACTIVE // Owner intentionally deactivated the brand (soft-delete)
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  PAYPAL
+  STRIPE
+  CASH_ON_DELIVERY
+  APPLE_PAY
+  GOOGLE_PAY
+  FAWRY
+  OTHER
+}
+
+enum Category {
+  FASHION
+  HOME
+  BEAUTY
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model Account {
   id                         String         @id @default(uuid())
   name                       String
   email                      String         @unique
@@ -58,18 +92,56 @@ model User {
   verificationCodeExpiresAt  DateTime?
   passwordResetCode          String?
   passwordResetCodeExpiresAt DateTime?
-  RefreshToken               RefreshToken[]
+  refreshTokens              RefreshToken[]
   provider                   Provider       @default(LOCAL)
   providerId                 String?
+  user                       User?
+  brand                      Brand?
 
   @@unique([provider, providerId])
+  @@index([status])
+  @@index([role])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  accountId String   @unique
+  account   Account  @relation(fields: [accountId], references: [id])
+  userName  String
+  photo     String?
+  phone     String?
+  gender    Gender?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Brand {
+  id              String         @id @default(uuid())
+  accountId       String         @unique
+  account         Account        @relation(fields: [accountId], references: [id])
+  description     String?
+  logo            String?
+  category        Category?
+  status          BrandStatus    @default(DRAFT)
+  instagramUrl    String?
+  tiktokUrl       String?
+  ownerName       String?
+  ownerNationalId String?
+  ownerPhone      String?
+  crn             String?
+  taxId           String?
+  paymentMethod   PaymentMethod?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status])
 }
 
 model RefreshToken {
   id            String         @id @default(uuid())
+  account       Account        @relation(fields: [accountId], references: [id])
+  accountId     String
   token         String
-  userId        String
-  user          User           @relation(fields: [userId], references: [id])
   expiresAt     DateTime
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
