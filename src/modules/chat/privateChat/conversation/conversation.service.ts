@@ -8,6 +8,7 @@ import {
   IGetAllPrivateConversations,
 } from "./conversation.interface";
 import { Status } from "../../../../generated/prisma";
+import { chatParticipantSelect } from "../../../auth/auth.select";
 
 class PrivateConverstionService {
   /*
@@ -58,7 +59,7 @@ class PrivateConverstionService {
         // Include participants and their related account data for context.
         participants: {
           include: {
-            account: true,
+            account: chatParticipantSelect,
           },
         },
 
@@ -124,7 +125,7 @@ class PrivateConverstionService {
         // Return participants with their account info after creation.
         participants: {
           include: {
-            account: true,
+            account: chatParticipantSelect,
           },
         },
       },
@@ -150,7 +151,7 @@ class PrivateConverstionService {
         // Include participants and their related account data for context.
         participants: {
           include: {
-            account: true,
+            account: chatParticipantSelect,
           },
         },
 
@@ -215,15 +216,7 @@ class PrivateConverstionService {
         // Include participants and their related account data for context.
         participants: {
           include: {
-            account: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                brand: { select: { logo: true } },
-                user: { select: { photo: true } },
-              },
-            },
+            account: chatParticipantSelect,
           },
         },
 
