@@ -14,3 +14,8 @@ export interface IGetOrCreatePrivateConversation {
   userId: string;
   recipientId: string;
 }
+
+export interface IGetPrivateConversation {
+  userId: string;
+  conversationId: string;
+}

@@ -9,3 +9,13 @@ export const getOrCreatePrivateConversationZodSchema = z.object({
     })
     .strict(),
 });
+
+export const getPrivateConversationZodSchema = z.object({
+  params: z
+    .object({
+      conversationId: z
+        .string()
+        .uuid({ message: "conversationId must be a valid UUID" }),
+    })
+    .strict(),
+});
