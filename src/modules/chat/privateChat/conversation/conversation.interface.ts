@@ -37,3 +37,6 @@ export interface IArchivePrivateConversation {
   userId: string;
   conversationId: string;
 }
+
+export interface IUnarchivePrivateConversation
+  extends IArchivePrivateConversation {}

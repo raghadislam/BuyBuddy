@@ -5,6 +5,7 @@ import {
   IGetPrivateConversationPayload,
   IGetAllPrivateConversationsPayload,
   IArchivePrivateConversation,
+  IUnarchivePrivateConversation,
 } from "./conversation.interface";
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
@@ -75,6 +76,23 @@ export const archivePrivateConversation: RequestHandler = async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Private conversations archieved successfully.",
+    data,
+  });
+};
+
+export const unarchivePrivateConversation: RequestHandler = async (
+  req,
+  res
+) => {
+  const payload: IUnarchivePrivateConversation = {
+    userId: req.account?.id!,
+    conversationId: req.params.conversationId,
+  };
+  const data = await privateConverstionService.unarchiveConversation(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Private conversation unarchived successfully.",
     data,
   });
 };

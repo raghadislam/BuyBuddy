@@ -29,3 +29,13 @@ export const archiveConversationZodSchema = z.object({
     })
     .strict(),
 });
+
+export const unarchiveConversationZodSchema = z.object({
+  params: z
+    .object({
+      conversationId: z
+        .string()
+        .uuid({ message: "conversationId must be a valid UUID" }),
+    })
+    .strict(),
+});

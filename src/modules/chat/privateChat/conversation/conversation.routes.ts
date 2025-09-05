@@ -4,12 +4,14 @@ import {
   getOrCreatePrivateConversationZodSchema,
   getPrivateConversationZodSchema,
   archiveConversationZodSchema,
+  unarchiveConversationZodSchema,
 } from "./conversation.validation";
 import {
   getOrCreatePrivateConversation,
   getPrivateConversation,
   getAllprivateConversations,
   archivePrivateConversation,
+  unarchivePrivateConversation,
 } from "./conversation.controller";
 import { validate } from "../../../../middlewares/validation.middleware";
 import { authenticate } from "../../../../middlewares/authenticate.middleware";
@@ -37,6 +39,13 @@ router.patch(
   authenticate,
   validate(archiveConversationZodSchema),
   archivePrivateConversation
+);
+
+router.patch(
+  "/:conversationId/unarchive",
+  authenticate,
+  validate(unarchiveConversationZodSchema),
+  unarchivePrivateConversation
 );
 
 export default router;

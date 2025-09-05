@@ -8,6 +8,7 @@ import {
   IGetAllPrivateConversationsPayload,
   IPrivateConversation,
   IArchivePrivateConversation,
+  IUnarchivePrivateConversation,
 } from "./conversation.interface";
 import { Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
@@ -334,6 +335,37 @@ class PrivateConverstionService {
     return prisma.privateConversation.update({
       where: { id: conversationId },
       data: { archivedAt: new Date() },
+    });
+  }
+
+  async unarchiveConversation(payload: IUnarchivePrivateConversation) {
+    const { userId, conversationId } = payload;
+
+    const conversation = await prisma.privateConversation.findUnique({
+      where: {
+        id: conversationId,
+        participants: { some: { accountId: userId } },
+      },
+    });
+
+    if (!conversation)
+      throw new APIError(
+        "You are not authorized to access this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+
+    // If it's not archived, can't unarchive
+    if (!conversation.archivedAt) {
+      throw new APIError(
+        "This conversation is not archived",
+        HttpStatus.Conflict
+      );
+    }
+
+    logger.info(`Unarchived private conversation with id: ${conversationId}`);
+    return prisma.privateConversation.update({
+      where: { id: conversationId },
+      data: { archivedAt: null },
     });
   }
 }
