@@ -3,6 +3,7 @@ import { RequestHandler } from "express";
 import {
   IGetOrCreatePrivateConversation,
   IGetPrivateConversation,
+  IGetAllPrivateConversations,
 } from "./conversation.interface";
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
@@ -42,6 +43,23 @@ export const getPrivateConversation: RequestHandler = async (req, res) => {
     message: "Private conversation retrieved successfully.",
     data: {
       conversation,
+    },
+  });
+};
+
+export const getAllprivateConversations: RequestHandler = async (req, res) => {
+  const payload: IGetAllPrivateConversations = {
+    userId: req.account?.id!,
+  };
+  const conversations = await privateConverstionService.getAllConversations(
+    payload
+  );
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Private conversations retrieved successfully.",
+    data: {
+      conversations,
     },
   });
 };

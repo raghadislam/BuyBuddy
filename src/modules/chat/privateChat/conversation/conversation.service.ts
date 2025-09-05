@@ -5,6 +5,7 @@ import APIError from "../../../../utils/APIError";
 import {
   IGetOrCreatePrivateConversation,
   IGetPrivateConversation,
+  IGetAllPrivateConversations,
 } from "./conversation.interface";
 import { Status } from "../../../../generated/prisma";
 
@@ -201,6 +202,65 @@ class PrivateConverstionService {
       messagesCount: conversation.messages?.length ?? 0,
     });
     return conversation;
+  }
+
+  async getAllConversations(payload: IGetAllPrivateConversations) {
+    const { userId } = payload;
+    const conversations = await prisma.privateConversation.findMany({
+      where: {
+        // ensure userId is present as a participant
+        participants: { some: { accountId: userId } },
+      },
+      include: {
+        // Include participants and their related account data for context.
+        participants: {
+          include: {
+            account: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                brand: { select: { logo: true } },
+                user: { select: { photo: true } },
+              },
+            },
+          },
+        },
+
+        // Include last messages that are visible to the requesting user.
+        messages: {
+          where: {
+            // Only messages that have a visibility row for this user and
+            // where deletedAt is null (i.e., the user hasn't deleted them).
+            visibilities: {
+              some: {
+                accountId: userId,
+                deletedAt: null,
+              },
+            },
+          },
+
+          // Order messages newest-first and take only one.
+          orderBy: { createdAt: "desc" },
+          take: 1,
+
+          include: {
+            // For each message, include only the visibility row for the requester
+            // to reduce payload size and show read/deleted metadata.
+            visibilities: {
+              where: { accountId: userId },
+              take: 1, // only need the requesting user's visibility
+            },
+
+            // Include a small subset of fields for users who reacted to the message.
+            reactedBy: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    });
+
+    logger.info(`Found private conversations for userID: ${userId}`);
+    return conversations;
   }
 }
 

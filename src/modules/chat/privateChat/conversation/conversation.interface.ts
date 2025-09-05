@@ -19,3 +19,7 @@ export interface IGetPrivateConversation {
   userId: string;
   conversationId: string;
 }
+
+export interface IGetAllPrivateConversations {
+  userId: string;
+}

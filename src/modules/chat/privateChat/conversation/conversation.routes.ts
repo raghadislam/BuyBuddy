@@ -7,6 +7,7 @@ import {
 import {
   getOrCreatePrivateConversation,
   getPrivateConversation,
+  getAllprivateConversations,
 } from "./conversation.controller";
 import { validate } from "../../../../middlewares/validation.middleware";
 import { authenticate } from "../../../../middlewares/authenticate.middleware";
@@ -26,5 +27,7 @@ router.get(
   validate(getPrivateConversationZodSchema),
   getPrivateConversation
 );
+
+router.get("/", authenticate, getAllprivateConversations);
 
 export default router;
