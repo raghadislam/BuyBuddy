@@ -9,3 +9,8 @@ export interface IPrivateConversation {
   participants: IPrivateConversationParticipant[];
   messages: IPrivateMessage[];
 }
+
+export interface IGetOrCreatePrivateConversation {
+  userId: string;
+  recipientId: string;
+}
