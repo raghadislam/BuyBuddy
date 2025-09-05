@@ -1,11 +1,31 @@
-import { Role, Status } from "../../generated/prisma";
-
+import { Role, Status, Provider } from "../../generated/prisma";
+import { IBrand } from "../brand/brand.interface";
 import { IUser } from "../user/user.interface";
+export interface IAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: Role;
+  createdAt: Date;
+  updatedAt: Date;
+  status: Status;
+  verificationCode?: String;
+  verificationCodeExpiresAt?: Date;
+  passwordResetCode?: String;
+  passwordResetCodeExpiresAt?: Date;
+  provider: Provider;
+  providerId?: string | null;
+  user?: IUser | null;
+  brand?: IBrand | null;
+}
+
 export interface ISignupPayload {
   name: string;
   email: string;
   password: string;
-  role: Extract<Role, "USER" | "SELLER">;
+  role: Extract<Role, "USER" | "BRAND">;
+  userName?: string;
 }
 export interface IVerfiyEmail {
   code: string;
@@ -30,6 +50,12 @@ export interface IRefreshTokenPayload {
   jti: string;
 }
 
+export interface IResetTokenPayload {
+  purpose: string;
+  accountId: string;
+  jti: string;
+}
+
 export interface IRefreshPayload {
   refreshToken: string;
 }
@@ -42,10 +68,15 @@ export interface IForgetPasswordPayload {
   email: string;
 }
 
-export interface IResetPasswordPayload {
+export interface IVerifyPasswordResetCode {
   code: string;
-  newPassword: string;
   email: string;
 }
 
-export interface IHandleGoogleCallbackPayload extends IUser {}
+export interface IResetPasswordPayload {
+  newPassword: string;
+  email: string;
+  resetToken: string;
+}
+
+export interface IHandleGoogleCallbackPayload extends IAccount {}

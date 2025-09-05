@@ -57,6 +57,14 @@ export default z
 
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number(),
 
+    RESET_TOKEN_SECRET: z.string().min(1, "RESET_TOKEN_SECRET is required"),
+
+    RESET_TOKEN_EXPIRES_IN: z
+      .string()
+      .min(1, "RESET_TOKEN_EXPIRES_IN is required"),
+
+    RESET_TOKEN_TTL_MINS: z.coerce.number(),
+
     JWT_COOKIE_EXPIRES_IN: z.coerce.number(),
 
     APP_NAME: z.string().min(1, `PP_NAME is required`),

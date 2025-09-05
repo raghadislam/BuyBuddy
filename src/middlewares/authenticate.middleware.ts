@@ -7,7 +7,8 @@ import {
 } from "../modules/auth/token.service";
 import prisma from "../config/prisma.config";
 import { Status } from "../enums/status.enum";
-import { userSafeSelect } from "../modules/user/user.select";
+import { accountSafeSelect } from "../modules/auth/auth.select";
+import { IAccount } from "../modules/auth/auth.interface";
 
 const getTokenFromRequest = (req: Request): string | undefined => {
   if (
@@ -36,14 +37,14 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
     throw new APIError("Invalid or expired access token.", 401);
   }
 
-  // Fetch the user referenced in the token. We select a "safe" projection
-  const user = await prisma.user.findUnique({
+  // Fetch the account referenced in the token. We select a "safe" projection
+  const account = await prisma.account.findUnique({
     where: { id: accessDecoded.id },
-    select: userSafeSelect,
+    select: accountSafeSelect,
   });
 
-  if (!user) {
-    throw new APIError("No user found for the provided token.", 401);
+  if (!account) {
+    throw new APIError("No account found for the provided token.", 401);
   }
 
   const { refreshToken } = req.cookies;
@@ -69,29 +70,29 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
     throw new APIError("Invalid or expired refresh token.", 401);
   }
 
-  // Check user account status and return helpful, actionable messages
-  if (user.status === Status.INACTIVE) {
+  // Check account account status and return helpful, actionable messages
+  if (account.status === Status.INACTIVE) {
     throw new APIError(
       "Account is inactive. Please contact support to reactivate your account.",
       403
     );
   }
 
-  if (user.status === Status.SUSPENDED) {
+  if (account.status === Status.SUSPENDED) {
     throw new APIError(
       "Account suspended. If you believe this is an error, please contact support.",
       403
     );
   }
 
-  if (user.status === Status.UNVERIFIED) {
+  if (account.status === Status.UNVERIFIED) {
     throw new APIError(
       "Email not verified. Please verify your email address before continuing.",
       403
     );
   }
 
-  // Attach the safe user object to the request so downstream handlers can use it
-  req.user = user;
+  // Attach the safe account object to the request so downstream handlers can use it
+  req.account = account as IAccount;
   next();
 };

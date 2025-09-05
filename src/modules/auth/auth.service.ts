@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { TokenExpiredError } from "jsonwebtoken";
 
 import env from "../../config/env.config";
 import {
@@ -10,6 +11,9 @@ import {
   IForgetPasswordPayload,
   IResetPasswordPayload,
   IHandleGoogleCallbackPayload,
+  IVerifyPasswordResetCode,
+  IRefreshTokenPayload,
+  IResetTokenPayload,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
@@ -28,16 +32,18 @@ import logger from "../../config/logger.config";
 import {
   generateAccessToken,
   generateRefreshToken,
+  generateResetToken,
   verifyRefreshToken,
-  hashToken,
+  verifyResetToken,
 } from "./token.service";
 import {
-  userSafeSelect,
-  userLoginSelect,
-  userResetPasswordSelect,
-} from "../user/user.select";
+  accountSafeSelect,
+  accountLoginSelect,
+  accountResetPasswordSelect,
+} from "./auth.select";
 import { generateNumericCode, hashCode, compareCode } from "./code.util";
 import { HttpStatus } from "../../enums/httpStatus.enum";
+import { Role } from "../../enums/role.enum";
 
 class AuthService {
   private async generateAndSendVerificationCode(
@@ -50,7 +56,7 @@ class AuthService {
     const ttl = env.EMAIL_VERIFICATION_TTL_MINUTES;
     const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
 
-    await prisma.user.update({
+    await prisma.account.update({
       where: { email },
       data: {
         verificationCode: hashed,
@@ -73,7 +79,7 @@ class AuthService {
     const ttl = env.PASSWORD_RESET_TTL_MINUTES;
     const expiresAt = new Date(Date.now() + ttl * 60 * 1000);
 
-    await prisma.user.update({
+    await prisma.account.update({
       where: { email },
       data: {
         passwordResetCode: hashed,
@@ -87,62 +93,86 @@ class AuthService {
   }
 
   async signup(payload: ISignupPayload) {
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    // Check if account already exists
+    const existingaccount = await prisma.account.findUnique({
       where: { email: payload.email },
-      select: userSafeSelect,
+      select: accountSafeSelect,
     });
 
-    if (existingUser) {
+    if (existingaccount) {
       // Reactivate account if inactive
-      if (existingUser.status === Status.INACTIVE) {
+      if (existingaccount.status === Status.INACTIVE) {
         await this.generateAndSendVerificationCode(
           "Activate your account",
-          existingUser.email
+          existingaccount.email
         );
 
-        return existingUser;
+        return existingaccount;
       }
 
       // Resend verification code if unverified
-      if (existingUser.status === Status.UNVERIFIED) {
+      if (existingaccount.status === Status.UNVERIFIED) {
         await this.generateAndSendVerificationCode(
           "Verify your email",
-          existingUser.email
+          existingaccount.email
         );
 
-        return existingUser;
+        return existingaccount;
       }
 
       // Handle suspended accounts
-      if (existingUser.status === Status.SUSPENDED) {
+      if (existingaccount.status === Status.SUSPENDED) {
         throw new APIError(
           "Your account has been suspended. Please contact support.",
           HttpStatus.Forbidden
         );
       }
 
-      // User is active
-      throw new APIError("User already exists", HttpStatus.Conflict);
+      // account is active
+      throw new APIError("account already exists", HttpStatus.Conflict);
     }
 
-    // Hash password and create new user
+    if (payload.userName && payload.role === Role.BRAND) {
+      throw new APIError(
+        "Brand accounts cannot include a username.",
+        HttpStatus.UnprocessableEntity
+      );
+    }
+
+    if (payload.role === Role.USER && !payload.userName) {
+      throw new APIError(
+        "Username is required for user accounts.",
+        HttpStatus.UnprocessableEntity
+      );
+    }
+
+    // Hash password and create new account
     payload.password = await hashPassword(payload.password);
-    const user = await prisma.user.create({
-      data: {
-        email: payload.email,
-        password: payload.password,
-        name: payload.name,
-        status: Status.UNVERIFIED,
-        role: payload.role,
-        provider: Provider.LOCAL,
-      },
-      select: userSafeSelect,
+
+    const data: any = {
+      email: payload.email,
+      password: payload.password,
+      name: payload.name,
+      status: Status.UNVERIFIED,
+      role: payload.role,
+      provider: Provider.LOCAL,
+    };
+
+    // Conditionally attach relation
+    if (payload.role === Role.BRAND) {
+      data.brand = { create: {} };
+    } else if (payload.role === Role.USER) {
+      data.user = { create: { userName: payload.userName } };
+    }
+
+    const account = await prisma.account.create({
+      data,
+      select: accountSafeSelect,
     });
 
-    if (!user) {
+    if (!account) {
       throw new APIError(
-        "Failed to create user",
+        "Failed to create account",
         HttpStatus.InternalServerError
       );
     }
@@ -151,19 +181,22 @@ class AuthService {
     const hashed = await hashCode(code);
 
     // Send verification code
-    await this.generateAndSendVerificationCode("Verify your email", user.email);
+    await this.generateAndSendVerificationCode(
+      "Verify your email",
+      account.email
+    );
 
     logger.info(
-      `New user registered ID: ${user.id}, name: ${user.name} ${user.name}`
+      `New account registered ID: ${account.id}, name: ${account.name} ${account.name}`
     );
-    return user;
+    return account;
   }
 
   async verifyEmail(payload: IVerfiyEmail) {
     const { email, code } = payload;
 
-    // Find user by email with only fields needed for verification
-    const existingUser = await prisma.user.findUnique({
+    // Find account by email with only fields needed for verification
+    const existingaccount = await prisma.account.findUnique({
       where: { email },
       select: {
         id: true,
@@ -173,11 +206,12 @@ class AuthService {
       },
     });
 
-    // If no user found, return 404 (email does not exist)
-    if (!existingUser) throw new APIError("Invalid email", HttpStatus.NotFound);
+    // If no account found, return 404 (email does not exist)
+    if (!existingaccount)
+      throw new APIError("Invalid email", HttpStatus.NotFound);
 
-    // If user has no verification code stored, ask to request a new one
-    if (!existingUser.verificationCode)
+    // If account has no verification code stored, ask to request a new one
+    if (!existingaccount.verificationCode)
       throw new APIError(
         "Verification code not found. Please request a new one.",
         HttpStatus.BadRequest
@@ -185,8 +219,8 @@ class AuthService {
 
     // Check if verification code has expired
     if (
-      !existingUser.verificationCodeExpiresAt ||
-      existingUser.verificationCodeExpiresAt <= new Date()
+      !existingaccount.verificationCodeExpiresAt ||
+      existingaccount.verificationCodeExpiresAt <= new Date()
     )
       throw new APIError(
         "Invalid or expired verification code.",
@@ -194,92 +228,92 @@ class AuthService {
       );
 
     // Compare provided code with stored hashed code
-    const ok = await compareCode(code, existingUser.verificationCode);
+    const ok = await compareCode(code, existingaccount.verificationCode);
     if (!ok)
       throw new APIError(
         "Invalid or expired verification code.",
         HttpStatus.BadRequest
       );
 
-    // Update user to ACTIVE and clear verification fields after successful validation
-    const user = await prisma.user.update({
+    // Update account to ACTIVE and clear verification fields after successful validation
+    const account = await prisma.account.update({
       where: { email },
       data: {
         status: Status.ACTIVE,
         verificationCode: null,
         verificationCodeExpiresAt: null,
       },
-      select: userSafeSelect,
+      select: accountSafeSelect,
     });
 
     // If update somehow failed, return server error
-    if (!user) {
+    if (!account) {
       throw new APIError(
         "Failed to verify email",
         HttpStatus.InternalServerError
       );
     }
 
-    // Generate access & refresh tokens for the verified user
+    // Generate access & refresh tokens for the verified account
     const accessToken = generateAccessToken({
-      id: user.id,
-      role: user.role,
-      createdAt: user.createdAt,
-      status: user.status,
-      email: user.email,
+      id: account.id,
+      role: account.role,
+      createdAt: account.createdAt,
+      status: account.status,
+      email: account.email,
     });
     const refreshToken = await generateRefreshToken({
-      id: user.id,
+      id: account.id,
       jti: uuidv4(),
     });
 
     // Send emails, but don't let it break the flow.
     (async () => {
       try {
-        if (existingUser.status === Status.INACTIVE) {
-          await sendAccountActivatedEmail(user.email, {
+        if (existingaccount.status === Status.INACTIVE) {
+          await sendAccountActivatedEmail(account.email, {
             subject: "Your account is now active",
-            name: user.name,
+            name: account.name,
           });
         } else {
-          await sendAccountVerifiedEmail(user.email, {
+          await sendAccountVerifiedEmail(account.email, {
             subject: "Verify your email",
-            name: user.name,
+            name: account.name,
           });
         }
       } catch (err) {
         logger.error(
-          `Failed to send verification email for user ${user.id}: ${err}`
+          `Failed to send verification email for account ${account.id}: ${err}`
         );
       }
     })();
 
-    logger.info(`User verified ID: ${user.id}, name: ${user.name}`);
+    logger.info(`account verified ID: ${account.id}, name: ${account.name}`);
 
-    return { user, accessToken, refreshToken, emailQueued: true };
+    return { account, accessToken, refreshToken, emailQueued: true };
   }
 
   async login(payload: ILoginPayload) {
     const { email, password } = payload;
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
+    // Find account by email
+    const account = await prisma.account.findUnique({
       where: {
         email,
       },
-      select: userLoginSelect,
+      select: accountLoginSelect,
     });
 
-    // If no user found or password does not match, throw error
-    if (!user || !(await comparePassword(password, user.password))) {
+    // If no account found or password does not match, throw error
+    if (!account || !(await comparePassword(password, account.password))) {
       throw new APIError("Invalid email or password", HttpStatus.Unauthorized);
     }
 
-    // If user has not verified their email, resend verification code and block login
-    if (user.status === Status.UNVERIFIED) {
+    // If account has not verified their email, resend verification code and block login
+    if (account.status === Status.UNVERIFIED) {
       await this.generateAndSendVerificationCode(
         "Verify your email",
-        user.email
+        account.email
       );
 
       throw new APIError(
@@ -288,11 +322,11 @@ class AuthService {
       );
     }
 
-    // If user is inactive, resend activation code and block login
-    if (user.status === Status.INACTIVE) {
+    // If account is inactive, resend activation code and block login
+    if (account.status === Status.INACTIVE) {
       await this.generateAndSendVerificationCode(
         "Activate your account",
-        user.email
+        account.email
       );
 
       throw new APIError(
@@ -301,8 +335,8 @@ class AuthService {
       );
     }
 
-    // If user is suspended, block login
-    if (user.status === Status.SUSPENDED) {
+    // If account is suspended, block login
+    if (account.status === Status.SUSPENDED) {
       throw new APIError(
         "Your account has been suspended. Please contact support.",
         HttpStatus.Forbidden
@@ -310,22 +344,22 @@ class AuthService {
     }
 
     const accessToken = generateAccessToken({
-      id: user.id,
-      role: user.role,
-      createdAt: user.createdAt,
-      status: user.status,
-      email: user.email,
+      id: account.id,
+      role: account.role,
+      createdAt: account.createdAt,
+      status: account.status,
+      email: account.email,
     });
     const refreshToken = await generateRefreshToken({
-      id: user.id,
+      id: account.id,
       jti: uuidv4(),
     });
 
-    // Exclude the password field from the user object and keep the rest as safeUser
-    const { password: _, ...safeUser } = user;
+    // Exclude the password field from the account object and keep the rest as safeaccount
+    const { password: _, ...safeaccount } = account;
 
-    logger.info(`User logged in ID: ${user.id}, name: ${user.name}`);
-    return { user: safeUser, accessToken, refreshToken };
+    logger.info(`account logged in ID: ${account.id}, name: ${account.name}`);
+    return { account: safeaccount, accessToken, refreshToken };
   }
 
   async refresh(payload: IRefreshPayload) {
@@ -336,35 +370,35 @@ class AuthService {
       throw new APIError("Invalid refresh token", HttpStatus.Unauthorized);
     }
 
-    // find user
-    const user = await prisma.user.findUnique({
+    // find account
+    const account = await prisma.account.findUnique({
       where: { id: decoded.id },
-      select: userSafeSelect,
+      select: accountSafeSelect,
     });
 
-    // Ensure the user exists before proceeding with token refresh
-    if (!user) {
-      throw new APIError("User not found", HttpStatus.Forbidden);
+    // Ensure the account exists before proceeding with token refresh
+    if (!account) {
+      throw new APIError("account not found", HttpStatus.Forbidden);
     }
 
     // status checks
-    if (user.status === Status.SUSPENDED) {
+    if (account.status === Status.SUSPENDED) {
       throw new APIError(
         "Your account has been suspended. Please contact support.",
         HttpStatus.Forbidden
       );
     }
 
-    // check if user is inactive
-    if (user.status === Status.INACTIVE) {
-      throw new APIError("User is not active", HttpStatus.Forbidden);
+    // check if account is inactive
+    if (account.status === Status.INACTIVE) {
+      throw new APIError("account is not active", HttpStatus.Forbidden);
     }
 
-    // Check if user is unverified
-    if (user.status === Status.UNVERIFIED) {
+    // Check if account is unverified
+    if (account.status === Status.UNVERIFIED) {
       await this.generateAndSendVerificationCode(
         "Verify your email",
-        user.email
+        account.email
       );
 
       throw new APIError(
@@ -378,16 +412,16 @@ class AuthService {
       where: { jti: decoded.jti },
     });
 
-    // If token record doesn't exist or doesn't belong to user => invalid
-    if (!storedToken || storedToken.userId !== user.id) {
+    // If token record doesn't exist or doesn't belong to account => invalid
+    if (!storedToken || storedToken.accountId !== account.id) {
       throw new APIError("Invalid refresh token", HttpStatus.Unauthorized);
     }
 
     // If token was already revoked -> possible reuse (token theft)
     if (storedToken.revokedReason) {
-      // Revoke all active refresh tokens for this user as a precaution
+      // Revoke all active refresh tokens for this account as a precaution
       await prisma.refreshToken.updateMany({
-        where: { userId: user.id, revokedReason: null },
+        where: { accountId: account.id, revokedReason: null },
         data: {
           revokedReason: RevokedReason.TOKEN_REUSE_DETECTED,
           revokedAt: new Date(),
@@ -395,7 +429,7 @@ class AuthService {
       });
 
       logger.warn(
-        `Refresh token reuse detected for user ID ${user.id}, token ${storedToken.id}`
+        `Refresh token reuse detected for account ID ${account.id}, token ${storedToken.id}`
       );
 
       throw new APIError(
@@ -420,7 +454,7 @@ class AuthService {
 
     // Everything checks out: rotate the refresh token
     const newRefreshToken = await generateRefreshToken({
-      id: user.id,
+      id: account.id,
       jti: uuidv4(),
     });
 
@@ -435,17 +469,19 @@ class AuthService {
 
     // Create a fresh access token as before
     const accessToken = generateAccessToken({
-      id: user.id,
-      role: user.role,
-      createdAt: user.createdAt,
-      status: user.status,
-      email: user.email,
+      id: account.id,
+      role: account.role,
+      createdAt: account.createdAt,
+      status: account.status,
+      email: account.email,
     });
 
-    logger.info(`Token refreshed for user ID: ${user.id}, name: ${user.name}`);
+    logger.info(
+      `Token refreshed for account ID: ${account.id}, name: ${account.name}`
+    );
 
     return {
-      user,
+      account,
       accessToken,
       newRefreshToken,
     };
@@ -459,7 +495,10 @@ class AuthService {
     // Revoke the refresh token by updating its record in the database
     await prisma.refreshToken.updateMany({
       where: { jti: decoded.jti, revokedAt: null },
-      data: { revokedAt: new Date(), revokedReason: RevokedReason.USER_LOGOUT },
+      data: {
+        revokedAt: new Date(),
+        revokedReason: RevokedReason.ACCOUNT_LOGOUT,
+      },
     });
 
     logger.info(`Refresh token revoked for logout: ${refreshToken}`);
@@ -468,13 +507,47 @@ class AuthService {
 
   async forgetPassword(payload: IForgetPasswordPayload) {
     const { email } = payload;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const account = await prisma.account.findUnique({ where: { email } });
 
-    // If no user found, return 404 (email does not exist)
-    if (!user) {
+    // If no account found, return 404 (email does not exist)
+    if (!account) {
       throw new APIError(
         "No account found with this email address.",
         HttpStatus.NotFound
+      );
+    }
+
+    // If account has not verified their email, resend verification code and block forget password
+    if (account.status === Status.UNVERIFIED) {
+      await this.generateAndSendVerificationCode(
+        "Verify your email",
+        account.email
+      );
+
+      throw new APIError(
+        "Please verify your email to continue",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // If account is inactive, resend activation code and block forget password
+    if (account.status === Status.INACTIVE) {
+      await this.generateAndSendVerificationCode(
+        "Activate your account",
+        account.email
+      );
+
+      throw new APIError(
+        "Your account is inactive. Please check your email to activate your account.",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // If account is suspended, block forget password
+    if (account.status === Status.SUSPENDED) {
+      throw new APIError(
+        "Your account has been suspended. Please contact support.",
+        HttpStatus.Forbidden
       );
     }
 
@@ -485,30 +558,30 @@ class AuthService {
     );
 
     logger.info(
-      `Password reset code sent to user ID: ${user.id}, email: ${user.email}`
+      `Password reset code sent to account ID: ${account.id}, email: ${account.email}`
     );
     return;
   }
 
-  async resetPassword(payload: IResetPasswordPayload) {
-    const { code, newPassword, email } = payload;
+  async verifyPasswordResetCode(payload: IVerifyPasswordResetCode) {
+    const { code, email } = payload;
 
-    // Find user with password reset fields only
-    const existingUser = await prisma.user.findUnique({
+    // Find account with password reset fields only
+    const existingaccount = await prisma.account.findUnique({
       where: { email },
-      select: userResetPasswordSelect,
+      select: accountResetPasswordSelect,
     });
 
-    // If no user found, return 404
-    if (!existingUser) {
+    // If no account found, return 404
+    if (!existingaccount) {
       throw new APIError(
         "No account found with this email address.",
         HttpStatus.NotFound
       );
     }
 
-    // If no reset code is stored, ask user to request a new one
-    if (!existingUser.passwordResetCode) {
+    // If no reset code is stored, ask account to request a new one
+    if (!existingaccount.passwordResetCode) {
       throw new APIError(
         "No reset code found. Please request a new password reset.",
         HttpStatus.BadRequest
@@ -517,8 +590,8 @@ class AuthService {
 
     // Check if reset code has expired
     if (
-      !existingUser.passwordResetCodeExpiresAt ||
-      existingUser.passwordResetCodeExpiresAt <= new Date()
+      !existingaccount.passwordResetCodeExpiresAt ||
+      existingaccount.passwordResetCodeExpiresAt <= new Date()
     ) {
       throw new APIError(
         "Your reset code has expired. Please request a new one.",
@@ -527,7 +600,7 @@ class AuthService {
     }
 
     // Validate provided code against stored hashed code
-    const ok = await compareCode(code, existingUser.passwordResetCode);
+    const ok = await compareCode(code, existingaccount.passwordResetCode);
     if (!ok) {
       throw new APIError(
         "The reset code you entered is invalid. Please try again or request a new one.",
@@ -535,22 +608,109 @@ class AuthService {
       );
     }
 
+    // Generate reset token (JWT)
+    const resetToken = await generateResetToken({
+      accountId: existingaccount.id,
+      purpose: "password-reset",
+      jti: uuidv4(),
+    });
+
+    return { resetToken };
+  }
+
+  async resetPassword(payload: IResetPasswordPayload) {
+    const { resetToken, newPassword } = payload;
+
+    let decoded: IResetTokenPayload;
+
+    try {
+      decoded = await verifyResetToken(resetToken);
+    } catch (err) {
+      if (err instanceof TokenExpiredError) {
+        throw new APIError("Invalid or expired token, please try again", 403);
+      }
+      throw err;
+    }
+
+    if (
+      !decoded ||
+      !decoded.accountId ||
+      decoded.purpose !== "password-reset"
+    ) {
+      throw new APIError("Invalid reset token", HttpStatus.Unauthorized);
+    }
+
+    // Find account with password reset fields only
+    const existingaccount = await prisma.account.findUnique({
+      where: { id: decoded.accountId },
+      select: accountResetPasswordSelect,
+    });
+
+    // If no account found, return 404
+    if (!existingaccount) {
+      throw new APIError(
+        "No account found with this email address.",
+        HttpStatus.NotFound
+      );
+    }
+
+    // Look up the stored refresh-token record by jti
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { jti: decoded.jti },
+    });
+
+    // If token record doesn't exist or doesn't belong to account => invalid
+    if (!storedToken || storedToken.accountId !== existingaccount.id) {
+      throw new APIError("Invalid reset token", HttpStatus.Unauthorized);
+    }
+
+    // If token was already revoked -> possible reuse (token theft)
+    if (storedToken.revokedReason) {
+      // Revoke all active refresh tokens for this account as a precaution
+      await prisma.refreshToken.updateMany({
+        where: { accountId: existingaccount.id, revokedReason: null },
+        data: {
+          revokedReason: RevokedReason.TOKEN_REUSE_DETECTED,
+          revokedAt: new Date(),
+        },
+      });
+
+      throw new APIError(
+        "Reset token has been revoked.",
+        HttpStatus.Unauthorized
+      );
+    }
+
+    // Check expiration of stored refresh token (defense-in-depth)
+    if (storedToken.expiresAt && storedToken.expiresAt < new Date()) {
+      // mark it revoked for clarity
+      await prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date(), revokedReason: RevokedReason.EXPIRED },
+      });
+
+      throw new APIError(
+        "Reset token has been revoked.",
+        HttpStatus.Unauthorized
+      );
+    }
+
     // Hash the new password before storing
     const hashedPassword = await hashPassword(newPassword);
 
-    // Update user: clear reset fields, set new password, ensure ACTIVE status
-    const user = await prisma.user.update({
-      where: { email },
+    // Update account: clear reset fields, set new password, ensure ACTIVE status
+    const account = await prisma.account.update({
+      where: { id: decoded.accountId },
       data: {
         password: hashedPassword,
         status: Status.ACTIVE,
         passwordResetCode: null,
         passwordResetCodeExpiresAt: null,
       },
-      select: userSafeSelect,
+      select: accountSafeSelect,
     });
 
-    if (!user) {
+    if (!account) {
       throw new APIError(
         "Something went wrong while resetting your password. Please try again.",
         HttpStatus.InternalServerError
@@ -560,7 +720,7 @@ class AuthService {
     // Revoke all previous refresh tokens for security after password change
     await prisma.refreshToken.updateMany({
       where: {
-        userId: user.id,
+        accountId: account.id,
         revokedReason: null,
       },
       data: {
@@ -571,33 +731,33 @@ class AuthService {
 
     // Generate fresh tokens
     const accessToken = generateAccessToken({
-      id: user.id,
-      role: user.role,
-      createdAt: user.createdAt,
-      status: user.status,
-      email: user.email,
+      id: account.id,
+      role: account.role,
+      createdAt: account.createdAt,
+      status: account.status,
+      email: account.email,
     });
     const refreshToken = await generateRefreshToken({
-      id: user.id,
+      id: account.id,
       jti: uuidv4(),
     });
 
     // Send confirmation email, but don't let it break the flow.
     (async () => {
       try {
-        await sendPasswordResetConfirmation(user.email, {
+        await sendPasswordResetConfirmation(account.email, {
           subject: "Your password has been reset successfully",
-          name: user.name,
+          name: account.name,
         });
       } catch (err) {
         logger.error(
-          `Failed to send password reset confirm email for user ${user.id}: ${err}`
+          `Failed to send password reset confirm email for account ${account.id}: ${err}`
         );
       }
     })();
 
     logger.info(
-      `Password successfully reset for user ID: ${user.id}, email: ${user.email}`
+      `Password successfully reset for account ID: ${account.id}, email: ${account.email}`
     );
 
     return { accessToken, refreshToken };
@@ -605,25 +765,25 @@ class AuthService {
 
   async handleGoogleCallback(payload: IHandleGoogleCallbackPayload) {
     const { email } = payload;
-    const user = await prisma.user.findUnique({
+    const account = await prisma.account.findUnique({
       where: { email },
-      select: userSafeSelect,
+      select: accountSafeSelect,
     });
 
     // Generate fresh tokens
     const accessToken = generateAccessToken({
-      id: user!.id,
-      role: user!.role,
-      createdAt: user!.createdAt,
-      status: user!.status,
-      email: user!.email,
+      id: account!.id,
+      role: account!.role,
+      createdAt: account!.createdAt,
+      status: account!.status,
+      email: account!.email,
     });
     const refreshToken = await generateRefreshToken({
-      id: user!.id,
+      id: account!.id,
       jti: uuidv4(),
     });
 
-    return { accessToken, refreshToken, user };
+    return { accessToken, refreshToken, account };
   }
 }
 

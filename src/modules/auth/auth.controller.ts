@@ -7,6 +7,7 @@ import {
   IForgetPasswordPayload,
   IResetPasswordPayload,
   IHandleGoogleCallbackPayload,
+  IVerifyPasswordResetCode,
 } from "./auth.interface";
 import AuthService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
@@ -14,20 +15,20 @@ import { HttpStatus } from "../../enums/httpStatus.enum";
 
 export const signup: RequestHandler = async (req, res) => {
   const payload: ISignupPayload = req.body;
-  const user = await AuthService.signup(payload);
+  const account = await AuthService.signup(payload);
 
   sendResponse(res, {
     statusCode: HttpStatus.Created,
     message: "Signup successful. Please verify your email.",
     data: {
-      user,
+      account,
     },
   });
 };
 
 export const verifyEmail: RequestHandler = async (req, res) => {
   const payload: IVerfiyEmail = req.body;
-  const { user, accessToken, refreshToken } = await AuthService.verifyEmail(
+  const { account, accessToken, refreshToken } = await AuthService.verifyEmail(
     payload
   );
 
@@ -36,7 +37,7 @@ export const verifyEmail: RequestHandler = async (req, res) => {
     statusCode: HttpStatus.OK,
     message: "Email verified successfully.",
     data: {
-      user,
+      account,
     },
     accessToken,
   });
@@ -44,14 +45,16 @@ export const verifyEmail: RequestHandler = async (req, res) => {
 
 export const login: RequestHandler = async (req, res) => {
   const payload: ILoginPayload = req.body;
-  const { user, accessToken, refreshToken } = await AuthService.login(payload);
+  const { account, accessToken, refreshToken } = await AuthService.login(
+    payload
+  );
 
   sendCookie(res, refreshToken);
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Login successful.",
     data: {
-      user,
+      account,
     },
     accessToken,
   });
@@ -59,7 +62,7 @@ export const login: RequestHandler = async (req, res) => {
 
 export const refresh: RequestHandler = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  const { user, accessToken, newRefreshToken } = await AuthService.refresh({
+  const { account, accessToken, newRefreshToken } = await AuthService.refresh({
     refreshToken,
   });
 
@@ -68,7 +71,7 @@ export const refresh: RequestHandler = async (req, res) => {
     statusCode: HttpStatus.OK,
     message: "Token refreshed successfully.",
     data: {
-      user,
+      account,
     },
     accessToken,
   });
@@ -95,6 +98,17 @@ export const forgetPassword: RequestHandler = async (req, res) => {
   });
 };
 
+export const verifyResetCode: RequestHandler = async (req, res, next) => {
+  const payload: IVerifyPasswordResetCode = req.body;
+  const result = await AuthService.verifyPasswordResetCode(payload);
+
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Code verified successfully",
+    data: result,
+  });
+};
+
 export const resetPassword: RequestHandler = async (req, res) => {
   const payload: IResetPasswordPayload = req.body;
   const { accessToken, refreshToken } = await AuthService.resetPassword(
@@ -111,16 +125,16 @@ export const resetPassword: RequestHandler = async (req, res) => {
 };
 
 export const googleCallbackHandler: RequestHandler = async (req, res, next) => {
-  const { accessToken, refreshToken, user } =
+  const { accessToken, refreshToken, account } =
     await AuthService.handleGoogleCallback(
-      req.user as IHandleGoogleCallbackPayload
+      req.account as IHandleGoogleCallbackPayload
     );
 
   sendCookie(res, refreshToken);
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     data: {
-      user: req.user,
+      account: req.account,
     },
     accessToken,
   });

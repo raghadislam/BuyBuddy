@@ -5,6 +5,7 @@ import env from "../../config/env.config";
 import {
   IAccessTokenPayload,
   IRefreshTokenPayload,
+  IResetTokenPayload,
 } from "../../modules/auth/auth.interface";
 import prisma from "../../config/prisma.config";
 
@@ -44,11 +45,36 @@ export const generateRefreshToken = async (
       jti: payload.jti,
       token: hashed,
       expiresAt,
-      userId: payload.id,
+      accountId: payload.id,
     },
   });
 
   return refreshToken;
+};
+
+export const generateResetToken = async (
+  payload: IResetTokenPayload
+): Promise<string> => {
+  const resetToken = generateJWT(
+    payload,
+    env.RESET_TOKEN_SECRET,
+    env.RESET_TOKEN_EXPIRES_IN
+  );
+
+  const hashed = hashToken(resetToken);
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + env.RESET_TOKEN_TTL_MINS);
+
+  await prisma.refreshToken.create({
+    data: {
+      jti: payload.jti,
+      token: hashed,
+      expiresAt,
+      accountId: payload.accountId,
+    },
+  });
+
+  return resetToken;
 };
 
 const verifyJWT = <T>(token: string, secret: string): T & JwtPayload => {
@@ -61,6 +87,10 @@ export const verifyAccessToken = (token: string) => {
 
 export const verifyRefreshToken = (token: string) => {
   return verifyJWT<IRefreshTokenPayload>(token, env.REFRESH_TOKEN_SECRET);
+};
+
+export const verifyResetToken = (token: string) => {
+  return verifyJWT<IResetTokenPayload>(token, env.RESET_TOKEN_SECRET);
 };
 
 export const hashToken = (token: string): string => {

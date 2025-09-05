@@ -14,42 +14,18 @@ export const signupZodSchema = z.object({
 
       password: z.string().min(6, "password should be more than 6 characters"),
 
-      confirmPassword: z
-        .string()
-        .min(6, "password should be more than 6 characters"),
+      role: z.enum([Role.BRAND, Role.USER]),
 
-      role: z.enum([Role.SELLER, Role.USER]),
+      userName: z
+        .string()
+        .min(3, "Username should be at least 3 characters")
+        .max(15, "Username cannot be more than 15 characters")
+        .optional(),
     })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: "Passwords don't match",
-      path: ["Password confirmations"],
-    }),
+    .strict(),
 });
 
 export const verifyEmailZodSchema = z.object({
-  body: z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-
-    code: z
-      .string()
-      .length(6, "Verification code must be exactly 6 characters"),
-  }),
-});
-
-export const loginZodSchema = z.object({
-  body: z.object({
-    email: z.string().min(1, "Email is required").email("Invalid email format"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-  }),
-});
-
-export const forgetPasswordZodSchema = z.object({
-  body: z.object({
-    email: z.string().min(1, "Email is required").email("Invalid email format"),
-  }),
-});
-
-export const resetPasswordZodSchema = z.object({
   body: z
     .object({
       email: z.string().email({ message: "Invalid email address" }),
@@ -57,6 +33,50 @@ export const resetPasswordZodSchema = z.object({
       code: z
         .string()
         .length(6, "Verification code must be exactly 6 characters"),
+    })
+    .strict(),
+});
+
+export const loginZodSchema = z.object({
+  body: z
+    .object({
+      email: z
+        .string()
+        .min(1, "Email is required")
+        .email("Invalid email format"),
+      password: z.string().min(6, "Password must be at least 6 characters"),
+    })
+    .strict(),
+});
+
+export const forgetPasswordZodSchema = z.object({
+  body: z
+    .object({
+      email: z
+        .string()
+        .min(1, "Email is required")
+        .email("Invalid email format"),
+    })
+    .strict(),
+});
+
+export const verifyResetCodeZodSchema = z.object({
+  body: z
+    .object({
+      email: z.string().min(1, "Email is required").email("Email is not valid"),
+
+      code: z
+        .string()
+        .min(1, "Code is required")
+        .regex(/^\d{6}$/, "Code must be a 6-digit number"),
+    })
+    .strict(),
+});
+
+export const resetPasswordZodSchema = z.object({
+  body: z
+    .object({
+      resetToken: z.string().min(1, "Reset token is required"),
 
       newPassword: z
         .string()
@@ -69,5 +89,6 @@ export const resetPasswordZodSchema = z.object({
     .refine((data) => data.newPassword === data.confirmNewPassword, {
       message: "Passwords don't match",
       path: ["Password confirmations"],
-    }),
+    })
+    .strict(),
 });
