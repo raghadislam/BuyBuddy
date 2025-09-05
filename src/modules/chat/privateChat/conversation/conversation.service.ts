@@ -146,6 +146,28 @@ class PrivateConverstionService {
       };
     }
 
+    const accounts = await prisma.account.findMany({
+      where: { id: { in: [accountId, recipientId] } },
+    });
+
+    if (accounts.length !== 2) {
+      throw new APIError(
+        "One or both accounts could not be found",
+        HttpStatus.NotFound
+      );
+    }
+
+    const ok: boolean =
+      (accounts[0].role === Role.BRAND && accounts[1].role === Role.USER) ||
+      (accounts[1].role === Role.BRAND && accounts[0].role === Role.USER);
+
+    if (!ok) {
+      throw new APIError(
+        "Invalid participants: conversation requires exactly one brand and one user",
+        HttpStatus.Forbidden
+      );
+    }
+
     // No existing conversation was found: create a new conversation with both participants.
     const conversation = await prisma.privateConversation.create({
       data: {
