@@ -102,7 +102,7 @@ class PrivateConverstionService {
         participants: existing.participants?.map((p) => p.accountId),
         messagesCount: existing.messages?.length ?? 0,
       });
-      return existing; // return the conversation object as-is
+      return { conversation: existing, isNew: false }; // return the conversation object as-is
     }
 
     // No existing conversation was found: create a new conversation with both participants.
@@ -133,7 +133,7 @@ class PrivateConverstionService {
       conversationId: conversation.id,
       participants: conversation.participants?.map((p) => p.accountId),
     });
-    return conversation;
+    return { conversation, isNew: true };
   }
 
   async getConversation(payload: IGetPrivateConversation) {

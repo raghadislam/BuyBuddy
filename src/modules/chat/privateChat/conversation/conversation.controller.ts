@@ -16,13 +16,14 @@ export const getOrCreatePrivateConversation: RequestHandler = async (
     recipientId: req.params.recipientId,
     userId: req.account?.id!,
   };
-  const conversation = await privateConverstionService.getOrCreateConversation(
-    payload
-  );
+  const { conversation, isNew } =
+    await privateConverstionService.getOrCreateConversation(payload);
 
   sendResponse(res, {
-    statusCode: HttpStatus.Created,
-    message: "Private conversation created successfully.",
+    statusCode: isNew ? HttpStatus.Created : HttpStatus.OK,
+    message: isNew
+      ? "Private conversation created successfully."
+      : "Private conversation retrieved successfully.",
     data: {
       conversation,
     },
