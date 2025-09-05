@@ -32,3 +32,8 @@ export interface IAnyPrivateConversation {
   participants?: IPrivateConversationParticipant[];
   messages?: IPrivateMessage[];
 }
+
+export interface IArchivePrivateConversation {
+  userId: string;
+  conversationId: string;
+}

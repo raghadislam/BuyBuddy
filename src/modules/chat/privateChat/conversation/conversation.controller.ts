@@ -4,6 +4,7 @@ import {
   IGetOrCreatePrivateConversationPayload,
   IGetPrivateConversationPayload,
   IGetAllPrivateConversationsPayload,
+  IArchivePrivateConversation,
 } from "./conversation.interface";
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
@@ -61,5 +62,19 @@ export const getAllprivateConversations: RequestHandler = async (req, res) => {
     data: {
       conversations,
     },
+  });
+};
+
+export const archivePrivateConversation: RequestHandler = async (req, res) => {
+  const payload: IArchivePrivateConversation = {
+    userId: req.account?.id!,
+    conversationId: req.params.conversationId,
+  };
+  const data = await privateConverstionService.archiveConversation(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Private conversations archieved successfully.",
+    data,
   });
 };

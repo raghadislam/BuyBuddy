@@ -7,19 +7,18 @@ import {
   IGetPrivateConversationPayload,
   IGetAllPrivateConversationsPayload,
   IPrivateConversation,
+  IArchivePrivateConversation,
 } from "./conversation.interface";
 import { Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
 
 class PrivateConverstionService {
   private formatConversation(
-    convo: IPrivateConversation,
-    userId: string,
-    needLastMessage: boolean = false
+    conversation: IPrivateConversation,
+    userId: string
   ) {
     const otherKey = "other";
-    const participantsArr: any[] = convo.participants ?? [];
-    const map = new Map<string, any>();
+    const participantsArr: any[] = conversation.participants ?? [];
 
     const mePartRaw =
       participantsArr.find((p) => p.accountId === userId) ?? null;
@@ -31,31 +30,15 @@ class PrivateConverstionService {
     };
     participantsObj[otherKey] = otherPartRaw;
 
-    const messages = (convo.messages ?? []).map((m: any) => {
-      const senderResolved = m.senderId ? map.get(m.senderId) ?? null : null;
-      return {
-        ...m,
-        sender: senderResolved,
-      };
-    });
-
-    const lastMessage = messages.length && needLastMessage ? messages[0] : null;
-
-    return {
-      id: convo.id,
-      createdAt: convo.createdAt,
-      updatedAt: convo.updatedAt,
-      participants: participantsObj,
-      messages,
-      lastMessage,
-    };
+    conversation.participants = participantsObj;
+    return conversation;
   }
 
   private formatConversationsList(
-    convos: IPrivateConversation[],
+    conversations: IPrivateConversation[],
     userId: string
   ) {
-    return convos.map((c) => this.formatConversation(c, userId, true));
+    return conversations.map((c) => this.formatConversation(c, userId));
   }
 
   /*
@@ -321,6 +304,37 @@ class PrivateConverstionService {
       conversations as IPrivateConversation[],
       userId
     );
+  }
+
+  async archiveConversation(payload: IArchivePrivateConversation) {
+    const { userId, conversationId } = payload;
+
+    const conversation = await prisma.privateConversation.findUnique({
+      where: {
+        id: conversationId,
+        participants: { some: { accountId: userId } },
+      },
+    });
+
+    if (!conversation)
+      throw new APIError(
+        "You are not authorized to access this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+
+    console.log(conversation.archivedAt);
+    if (conversation.archivedAt) {
+      throw new APIError(
+        "This conversation is already archived",
+        HttpStatus.Conflict
+      );
+    }
+
+    logger.info(`Archived private conversation with id: ${conversationId}`);
+    return prisma.privateConversation.update({
+      where: { id: conversationId },
+      data: { archivedAt: new Date() },
+    });
   }
 }
 
