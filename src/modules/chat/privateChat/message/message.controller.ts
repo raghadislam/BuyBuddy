@@ -7,6 +7,7 @@ import { HttpStatus } from "../../../../enums/httpStatus.enum";
 import {
   ReactToPrivateMessage,
   SendPrivateMessagePayload,
+  MarkMessageReadPayload,
 } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
@@ -65,5 +66,20 @@ export const sendMessage: RequestHandler = async (req, res, next) => {
     data: {
       message,
     },
+  });
+};
+
+export const markMessageRead: RequestHandler = async (req, res, next) => {
+  const payload: MarkMessageReadPayload = {
+    accountId: req.account?.id!,
+    conversationId: req.params.conversationId,
+    messageId: req.params.messageId,
+  };
+
+  const data = await privateMessageService.markMessageRead(payload);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Message marked as read successfully.",
+    data,
   });
 };

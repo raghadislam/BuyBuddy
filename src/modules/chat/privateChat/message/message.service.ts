@@ -6,6 +6,7 @@ import { IGetPrivateMessages, IPrivateMessage } from "./message.interface";
 import {
   ReactToPrivateMessage,
   SendPrivateMessagePayload,
+  MarkMessageReadPayload,
 } from "./message.type";
 
 class PrivateMessage {
@@ -200,6 +201,86 @@ class PrivateMessage {
 
       logger.info(`Message with id ${message.id} created`);
       return message;
+    });
+  }
+
+  async markMessageRead(payload: MarkMessageReadPayload) {
+    const { conversationId, accountId, messageId } = payload;
+
+    const participant = await prisma.privateConversationParticipant.findUnique({
+      where: {
+        conversationId_accountId: { conversationId, accountId },
+      },
+      select: {
+        unreadCount: true,
+      },
+    });
+
+    if (!participant) {
+      throw new APIError(
+        "You are not authorized to read messages in this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // validate message belongs to conversation
+      const message = await tx.privateMessage.findUnique({
+        where: { id: messageId },
+        select: { conversationId: true },
+      });
+      if (!message) {
+        throw new APIError("Invalid message ID", HttpStatus.BadRequest);
+      }
+      if (message.conversationId !== conversationId) {
+        throw new APIError(
+          "Message does not belong to this conversation",
+          HttpStatus.BadRequest
+        );
+      }
+
+      const existing = await tx.privateMessageVisibility.findUnique({
+        where: { messageId_accountId: { messageId, accountId } },
+      });
+
+      if (!existing || existing.deletedAt) {
+        throw new APIError(
+          "You are not authorized to read this message",
+          HttpStatus.Forbidden
+        );
+      }
+
+      if (existing.readAt) {
+        throw new APIError(
+          "This message is already marked as read",
+          HttpStatus.Conflict
+        );
+      }
+
+      const result = await tx.privateMessageVisibility.update({
+        where: { messageId_accountId: { messageId, accountId } },
+        data: { readAt: new Date() },
+      });
+
+      const marked = 1;
+
+      // adjust unreadCount (never below 0)
+      const priorUnread = participant.unreadCount ?? 0;
+      const newUnread = Math.max(0, priorUnread - marked);
+
+      await tx.privateConversationParticipant.update({
+        where: {
+          conversationId_accountId: { conversationId, accountId },
+        },
+        data: {
+          unreadCount: newUnread,
+        },
+      });
+
+      logger.info(
+        `Marked message ${messageId} of private conversation ${conversationId} as read for account ${accountId}`
+      );
+      return { marked, unreadCount: newUnread };
     });
   }
 }

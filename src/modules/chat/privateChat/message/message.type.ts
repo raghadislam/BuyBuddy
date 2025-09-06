@@ -14,3 +14,9 @@ export type SendPrivateMessagePayload = {
   contentType: ContentType;
   attachments?: SendMessageAttachment[];
 };
+
+export type MarkMessageReadPayload = {
+  accountId: string;
+  conversationId: string;
+  messageId: string;
+};

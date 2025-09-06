@@ -74,3 +74,19 @@ export const sendPrivateMessageZodSchema = z.object({
     })
     .strict(),
 });
+
+export const markMessageReadZodSchema = z.object({
+  params: z
+    .object({
+      conversationId: z
+        .string()
+        .min(1, "conversationId is required")
+        .uuid({ message: "conversationId must be a valid UUID" }),
+
+      messageId: z
+        .string()
+        .min(1, "messageId is required")
+        .uuid({ message: "messageId must be a valid UUID" }),
+    })
+    .strict(),
+});
