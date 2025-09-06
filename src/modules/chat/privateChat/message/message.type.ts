@@ -1,5 +1,6 @@
 import { ReactionType, ContentType } from "../../../../generated/prisma";
 import { SendMessageAttachment } from "../messageAttachment/messageAttachment.type";
+import { MatchType } from "../../../../enums/matchType.enum";
 
 export type ReactToPrivateMessage = {
   accountId: string;
@@ -31,4 +32,14 @@ export type DeleteForAllPayload = {
   accountId: string;
   conversationId: string;
   messageId: string;
+};
+
+export type SearchMessagesPayload = {
+  accountId: string;
+  conversationId: string;
+  query: string;
+  match?: MatchType;
+  caseSensitive?: boolean;
+  limit?: number;
+  cursor?: string;
 };

@@ -7,6 +7,7 @@ import {
   markMessageReadZodSchema,
   deleteForMeZodSchema,
   deleteForAllZodSchema,
+  searchMessagesZodSchema,
 } from "./message.validation";
 import {
   deleteMessageForAll,
@@ -14,6 +15,7 @@ import {
   getMessages,
   markMessageRead,
   reactToMessage,
+  searchMessages,
   sendMessage,
 } from "./message.controller";
 import { validate } from "../../../../middlewares/validation.middleware";
@@ -53,4 +55,12 @@ router.post(
   validate(deleteForAllZodSchema),
   deleteMessageForAll
 );
+
+router.get(
+  "/search",
+  authenticate,
+  validate(searchMessagesZodSchema),
+  searchMessages
+);
+
 export default router;

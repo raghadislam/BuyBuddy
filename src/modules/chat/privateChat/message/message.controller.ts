@@ -10,6 +10,7 @@ import {
   MarkMessageReadPayload,
   DeleteForMePayload,
   DeleteForAllPayload,
+  SearchMessagesPayload,
 } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
@@ -113,5 +114,26 @@ export const deleteMessageForAll: RequestHandler = async (req, res, next) => {
     statusCode: HttpStatus.OK,
     message: "Message deleted for everyone.",
     data,
+  });
+};
+
+export const searchMessages: RequestHandler = async (req, res, next) => {
+  const payload: SearchMessagesPayload = {
+    accountId: req.account?.id!,
+    conversationId: req.params.conversationId,
+    query: req.body.query,
+    match: req.body.match,
+    caseSensitive: req.body.caseSensitive,
+    limit: req.query.limit ? Number(req.query.limit) : 50,
+    cursor: req.query.cursor ? String(req.query.cursor) : undefined,
+  };
+
+  const messages = await privateMessageService.searchMessagesByString(payload);
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Messages fetched successfully.",
+    data: {
+      messages,
+    },
   });
 };

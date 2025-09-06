@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ContentType, ReactionType } from "../../../../generated/prisma";
+import { MatchType } from "../../../../enums/matchType.enum";
 
 export const getPrivateMessagesZodSchema = z.object({
   params: z
@@ -108,3 +109,40 @@ export const deleteForMeZodSchema = z.object({
 });
 
 export const deleteForAllZodSchema = deleteForMeZodSchema;
+
+export const searchMessagesZodSchema = z.object({
+  params: z
+    .object({
+      conversationId: z
+        .string()
+        .min(1, "conversationId is required")
+        .uuid({ message: "conversationId must be a valid UUID" }),
+    })
+    .strict(),
+
+  body: z
+    .object({
+      query: z.string().min(1, "Query string is required"),
+
+      match: z.nativeEnum(MatchType).optional().default(MatchType.CONTAINS),
+
+      caseSensitive: z.boolean().optional().default(false),
+    })
+    .strict(),
+
+  query: z
+    .object({
+      cursor: z
+        .string()
+        .uuid({ message: "cursor must be a valid UUID" })
+        .optional(),
+
+      limit: z
+        .preprocess((val) => {
+          if (val === undefined || val === null || val === "") return undefined;
+          return Number(val);
+        }, z.number().int().min(1).max(100).optional())
+        .default(50),
+    })
+    .strict(),
+});

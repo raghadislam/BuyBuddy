@@ -9,9 +9,43 @@ import {
   MarkMessageReadPayload,
   DeleteForMePayload,
   DeleteForAllPayload,
+  SearchMessagesPayload,
 } from "./message.type";
+import { MatchType } from "../../../../enums/matchType.enum";
 
 class PrivateMessage {
+  private wordContainsSubstring(
+    content: string,
+    query: string,
+    caseSensitive = false
+  ): boolean {
+    const q = caseSensitive ? query : query.toLowerCase();
+    const words = content.split(/\s+/);
+    return words.some((w) => {
+      const word = caseSensitive ? w : w.toLowerCase();
+      return word.includes(q);
+    });
+  }
+
+  private buildContentFilter(
+    query: string,
+    match: MatchType,
+    caseSensitive: boolean
+  ) {
+    const mode = caseSensitive ? undefined : "insensitive";
+    switch (match) {
+      case MatchType.EXACT:
+        return { equals: query, mode };
+      case MatchType.STARTSWITH:
+        return { startsWith: query, mode };
+      case MatchType.ENDSWITH:
+        return { endsWith: query, mode };
+      case MatchType.CONTAINS:
+      default:
+        return { contains: query, mode };
+    }
+  }
+
   async getMessages(payload: IGetPrivateMessages) {
     const { accountId, conversationId, cursor, since, limit = 50 } = payload;
 
@@ -538,6 +572,102 @@ class PrivateMessage {
         updatedUnreadCount,
       };
     });
+  }
+
+  async searchMessagesByString(payload: SearchMessagesPayload) {
+    const {
+      accountId,
+      conversationId,
+      query,
+      match = MatchType.CONTAINS,
+      caseSensitive = false,
+      limit = 50,
+      cursor,
+    } = payload;
+
+    // verify participant exists
+    const participant = await prisma.privateConversationParticipant.findUnique({
+      where: {
+        conversationId_accountId: { conversationId, accountId },
+      },
+      select: {
+        unreadCount: true,
+      },
+    });
+
+    if (!participant) {
+      throw new APIError(
+        "You are not part of this conversation",
+        HttpStatus.Forbidden
+      );
+    }
+
+    let messages;
+    if (match === MatchType.WORDCONTAINS) {
+      // fetch candidate messages from DB with a broad "contains"
+      // We oversample (limit * 3) to ensure enough candidates after filtering
+      const candidates = await prisma.privateMessage.findMany({
+        where: {
+          conversationId,
+          deletedAt: null,
+          visibilities: {
+            some: {
+              accountId: accountId,
+              deletedAt: null,
+            },
+          },
+          content: {
+            contains: query,
+            mode: caseSensitive ? undefined : "insensitive",
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit * 3,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+        select: {
+          id: true,
+          senderId: true,
+          content: true,
+          createdAt: true,
+        },
+      });
+
+      // Now refine results in memory using custom word matching
+      messages = candidates
+        .filter((m) =>
+          this.wordContainsSubstring(m.content, query, caseSensitive)
+        )
+        .slice(0, limit);
+    } else {
+      const contentFilter = this.buildContentFilter(
+        query,
+        match,
+        caseSensitive
+      );
+      messages = await prisma.privateMessage.findMany({
+        where: {
+          conversationId,
+          deletedAt: null,
+          content: contentFilter as any,
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+        select: {
+          id: true,
+          senderId: true,
+          content: true,
+          createdAt: true,
+        },
+      });
+    }
+
+    return {
+      total: messages.length,
+      messages,
+      nextCursor:
+        messages.length === limit ? messages[messages.length - 1].id : null,
+    };
   }
 }
 
