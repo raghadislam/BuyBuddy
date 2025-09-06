@@ -1,12 +1,12 @@
 import prisma from "../../config/prisma.config";
-import { IUpdateBrandProfile } from "./brand.interface";
+import { UpdateBrandProfile } from "./brand.type";
 import logger from "../../config/logger.config";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
 import { profileSelect } from "../auth/auth.select";
 
 class BrandService {
-  async updateBrandProfile(accountId: string, payload: IUpdateBrandProfile) {
+  async updateBrandProfile(accountId: string, payload: UpdateBrandProfile) {
     const brand = await prisma.brand.update({
       where: {
         accountId,

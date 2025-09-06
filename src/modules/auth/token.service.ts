@@ -3,10 +3,10 @@ import crypto from "crypto";
 
 import env from "../../config/env.config";
 import {
-  IAccessTokenPayload,
-  IRefreshTokenPayload,
-  IResetTokenPayload,
-} from "../../modules/auth/auth.interface";
+  AccessTokenPayload,
+  RefreshTokenPayload,
+  ResetTokenPayload,
+} from "./auth.type";
 import prisma from "../../config/prisma.config";
 
 const generateJWT = <T extends object>(
@@ -19,7 +19,7 @@ const generateJWT = <T extends object>(
   } as object);
 };
 
-export const generateAccessToken = (payload: IAccessTokenPayload): string => {
+export const generateAccessToken = (payload: AccessTokenPayload): string => {
   return generateJWT(
     payload,
     env.ACCESS_TOKEN_SECRET,
@@ -28,7 +28,7 @@ export const generateAccessToken = (payload: IAccessTokenPayload): string => {
 };
 
 export const generateRefreshToken = async (
-  payload: IRefreshTokenPayload
+  payload: RefreshTokenPayload
 ): Promise<string> => {
   const refreshToken = generateJWT(
     payload,
@@ -53,7 +53,7 @@ export const generateRefreshToken = async (
 };
 
 export const generateResetToken = async (
-  payload: IResetTokenPayload
+  payload: ResetTokenPayload
 ): Promise<string> => {
   const resetToken = generateJWT(
     payload,
@@ -82,15 +82,15 @@ const verifyJWT = <T>(token: string, secret: string): T & JwtPayload => {
 };
 
 export const verifyAccessToken = (token: string) => {
-  return verifyJWT<IAccessTokenPayload>(token, env.ACCESS_TOKEN_SECRET);
+  return verifyJWT<AccessTokenPayload>(token, env.ACCESS_TOKEN_SECRET);
 };
 
 export const verifyRefreshToken = (token: string) => {
-  return verifyJWT<IRefreshTokenPayload>(token, env.REFRESH_TOKEN_SECRET);
+  return verifyJWT<RefreshTokenPayload>(token, env.REFRESH_TOKEN_SECRET);
 };
 
 export const verifyResetToken = (token: string) => {
-  return verifyJWT<IResetTokenPayload>(token, env.RESET_TOKEN_SECRET);
+  return verifyJWT<ResetTokenPayload>(token, env.RESET_TOKEN_SECRET);
 };
 
 export const hashToken = (token: string): string => {

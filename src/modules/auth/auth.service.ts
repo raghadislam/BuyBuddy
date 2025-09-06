@@ -3,23 +3,21 @@ import { TokenExpiredError } from "jsonwebtoken";
 
 import env from "../../config/env.config";
 import {
-  ISignupPayload,
-  IVerfiyEmail,
-  ILoginPayload,
-  IRefreshPayload,
-  ILogoutPayload,
-  IForgetPasswordPayload,
-  IResetPasswordPayload,
-  IHandleGoogleCallbackPayload,
-  IVerifyPasswordResetCode,
-  IRefreshTokenPayload,
-  IResetTokenPayload,
-} from "./auth.interface";
+  SignupPayload,
+  VerfiyEmail,
+  LoginPayload,
+  RefreshPayload,
+  LogoutPayload,
+  ForgetPasswordPayload,
+  ResetPasswordPayload,
+  HandleGoogleCallbackPayload,
+  VerifyPasswordResetCode,
+  ResetTokenPayload,
+  ResendVerificationCode,
+} from "./auth.type";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
-import { Status } from "../../enums/status.enum";
-import { RevokedReason } from "../../enums/revokedReason.enum";
-import { Provider } from "../../enums/provider.enum";
+import { Status, RevokedReason, Provider, Role } from "../../generated/prisma";
 import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
@@ -27,7 +25,7 @@ import {
   sendPasswordResetConfirmation,
   sendAccountActivatedEmail,
 } from "../../services/email/send";
-import { hashPassword, comparePassword } from "../../utils/functions/hash";
+import { hashPassword, comparePassword } from "../../utils/hash";
 import logger from "../../config/logger.config";
 import {
   generateAccessToken,
@@ -43,7 +41,6 @@ import {
 } from "./auth.select";
 import { generateNumericCode, hashCode, compareCode } from "./code.util";
 import { HttpStatus } from "../../enums/httpStatus.enum";
-import { Role } from "../../enums/role.enum";
 
 class AuthService {
   private async generateAndSendVerificationCode(
@@ -92,7 +89,7 @@ class AuthService {
     });
   }
 
-  async signup(payload: ISignupPayload) {
+  async signup(payload: SignupPayload) {
     // Check if account already exists
     const existingaccount = await prisma.account.findUnique({
       where: { email: payload.email },
@@ -100,36 +97,34 @@ class AuthService {
     });
 
     if (existingaccount) {
-      // Reactivate account if inactive
-      if (existingaccount.status === Status.INACTIVE) {
-        await this.generateAndSendVerificationCode(
-          "Activate your account",
-          existingaccount.email
-        );
+      switch (existingaccount.status) {
+        case Status.INACTIVE:
+          throw new APIError(
+            "Your account is inactive. Please request reactivation.",
+            HttpStatus.Forbidden
+          );
 
-        return existingaccount;
+        case Status.UNVERIFIED:
+          throw new APIError(
+            "Your email is not verified. Please verify your account.",
+            HttpStatus.Forbidden
+          );
+
+        case Status.SUSPENDED:
+          throw new APIError(
+            "Your account has been suspended. Please contact support.",
+            HttpStatus.Forbidden
+          );
+
+        case Status.ACTIVE:
+          throw new APIError("Account already exists.", HttpStatus.Conflict);
+
+        default:
+          throw new APIError(
+            "Unknown account status.",
+            HttpStatus.InternalServerError
+          );
       }
-
-      // Resend verification code if unverified
-      if (existingaccount.status === Status.UNVERIFIED) {
-        await this.generateAndSendVerificationCode(
-          "Verify your email",
-          existingaccount.email
-        );
-
-        return existingaccount;
-      }
-
-      // Handle suspended accounts
-      if (existingaccount.status === Status.SUSPENDED) {
-        throw new APIError(
-          "Your account has been suspended. Please contact support.",
-          HttpStatus.Forbidden
-        );
-      }
-
-      // account is active
-      throw new APIError("account already exists", HttpStatus.Conflict);
     }
 
     if (payload.userName && payload.role === Role.BRAND) {
@@ -192,7 +187,52 @@ class AuthService {
     return account;
   }
 
-  async verifyEmail(payload: IVerfiyEmail) {
+  async resendVerificationCode(payload: ResendVerificationCode) {
+    const { email } = payload;
+    const account = await prisma.account.findUnique({
+      where: { email },
+      select: accountSafeSelect,
+    });
+
+    if (!account) {
+      throw new APIError(
+        "No account found with this email.",
+        HttpStatus.NotFound
+      );
+    }
+
+    // If account already verified or active, block resending
+    if (account.status === Status.ACTIVE) {
+      throw new APIError(
+        "This account is already verified.",
+        HttpStatus.BadRequest
+      );
+    }
+
+    // If suspended, block
+    if (account.status === Status.SUSPENDED) {
+      throw new APIError(
+        "Your account has been suspended. Please contact support.",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // Generate and send verification code
+    await this.generateAndSendVerificationCode(
+      account.status === Status.INACTIVE
+        ? "Activate your account"
+        : "Verify your email",
+      account.email
+    );
+
+    logger.info(`Verification code resent for account ID: ${account.id}`);
+    return {
+      message: "Verification code resent successfully",
+      account,
+    };
+  }
+
+  async verifyEmail(payload: VerfiyEmail) {
     const { email, code } = payload;
 
     // Find account by email with only fields needed for verification
@@ -293,7 +333,7 @@ class AuthService {
     return { account, accessToken, refreshToken, emailQueued: true };
   }
 
-  async login(payload: ILoginPayload) {
+  async login(payload: LoginPayload) {
     const { email, password } = payload;
 
     // Find account by email
@@ -362,7 +402,7 @@ class AuthService {
     return { account: safeaccount, accessToken, refreshToken };
   }
 
-  async refresh(payload: IRefreshPayload) {
+  async refresh(payload: RefreshPayload) {
     const { refreshToken } = payload;
     const decoded = await verifyRefreshToken(refreshToken);
 
@@ -487,7 +527,7 @@ class AuthService {
     };
   }
 
-  async logout(payload: ILogoutPayload) {
+  async logout(payload: LogoutPayload) {
     const { refreshToken } = payload;
     // Verify refresh token and extract payload.
     const decoded = verifyRefreshToken(refreshToken);
@@ -505,7 +545,7 @@ class AuthService {
     return;
   }
 
-  async forgetPassword(payload: IForgetPasswordPayload) {
+  async forgetPassword(payload: ForgetPasswordPayload) {
     const { email } = payload;
     const account = await prisma.account.findUnique({ where: { email } });
 
@@ -563,7 +603,7 @@ class AuthService {
     return;
   }
 
-  async verifyPasswordResetCode(payload: IVerifyPasswordResetCode) {
+  async verifyPasswordResetCode(payload: VerifyPasswordResetCode) {
     const { code, email } = payload;
 
     // Find account with password reset fields only
@@ -618,10 +658,10 @@ class AuthService {
     return { resetToken };
   }
 
-  async resetPassword(payload: IResetPasswordPayload) {
+  async resetPassword(payload: ResetPasswordPayload) {
     const { resetToken, newPassword } = payload;
 
-    let decoded: IResetTokenPayload;
+    let decoded: ResetTokenPayload;
 
     try {
       decoded = await verifyResetToken(resetToken);
@@ -763,7 +803,7 @@ class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async handleGoogleCallback(payload: IHandleGoogleCallbackPayload) {
+  async handleGoogleCallback(payload: HandleGoogleCallbackPayload) {
     const { email } = payload;
     const account = await prisma.account.findUnique({
       where: { email },

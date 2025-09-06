@@ -5,6 +5,7 @@ import {
   getPrivateConversationZodSchema,
   archiveConversationZodSchema,
   unarchiveConversationZodSchema,
+  markReadZodSchema,
 } from "./conversation.validation";
 import {
   getOrCreatePrivateConversation,
@@ -12,9 +13,11 @@ import {
   getAllprivateConversations,
   archivePrivateConversation,
   unarchivePrivateConversation,
+  markRead,
 } from "./conversation.controller";
 import { validate } from "../../../../middlewares/validation.middleware";
 import { authenticate } from "../../../../middlewares/authenticate.middleware";
+import messageRouter from "../message/message.routes";
 
 const router = express.Router();
 
@@ -47,5 +50,14 @@ router.patch(
   validate(unarchiveConversationZodSchema),
   unarchivePrivateConversation
 );
+
+router.post(
+  "/:conversationId/mark-read",
+  authenticate,
+  validate(markReadZodSchema),
+  markRead
+);
+
+router.use("/:conversationId/messages", messageRouter);
 
 export default router;
