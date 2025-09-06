@@ -443,6 +443,7 @@ class PrivateConverstionService {
             some: {
               accountId,
               deletedAt: null,
+              readAt: null,
             },
           },
         },
