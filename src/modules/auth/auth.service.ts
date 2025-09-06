@@ -98,36 +98,34 @@ class AuthService {
     });
 
     if (existingaccount) {
-      // Reactivate account if inactive
-      if (existingaccount.status === Status.INACTIVE) {
-        await this.generateAndSendVerificationCode(
-          "Activate your account",
-          existingaccount.email
-        );
+      switch (existingaccount.status) {
+        case Status.INACTIVE:
+          throw new APIError(
+            "Your account is inactive. Please request reactivation.",
+            HttpStatus.Forbidden
+          );
 
-        return existingaccount;
+        case Status.UNVERIFIED:
+          throw new APIError(
+            "Your email is not verified. Please verify your account.",
+            HttpStatus.Forbidden
+          );
+
+        case Status.SUSPENDED:
+          throw new APIError(
+            "Your account has been suspended. Please contact support.",
+            HttpStatus.Forbidden
+          );
+
+        case Status.ACTIVE:
+          throw new APIError("Account already exists.", HttpStatus.Conflict);
+
+        default:
+          throw new APIError(
+            "Unknown account status.",
+            HttpStatus.InternalServerError
+          );
       }
-
-      // Resend verification code if unverified
-      if (existingaccount.status === Status.UNVERIFIED) {
-        await this.generateAndSendVerificationCode(
-          "Verify your email",
-          existingaccount.email
-        );
-
-        return existingaccount;
-      }
-
-      // Handle suspended accounts
-      if (existingaccount.status === Status.SUSPENDED) {
-        throw new APIError(
-          "Your account has been suspended. Please contact support.",
-          HttpStatus.Forbidden
-        );
-      }
-
-      // account is active
-      throw new APIError("account already exists", HttpStatus.Conflict);
     }
 
     if (payload.userName && payload.role === Role.BRAND) {
