@@ -106,3 +106,5 @@ export const deleteForMeZodSchema = z.object({
     })
     .strict(),
 });
+
+export const deleteForAllZodSchema = deleteForMeZodSchema;

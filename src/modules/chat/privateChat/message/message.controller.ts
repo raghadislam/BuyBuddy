@@ -9,6 +9,7 @@ import {
   SendPrivateMessagePayload,
   MarkMessageReadPayload,
   DeleteForMePayload,
+  DeleteForAllPayload,
 } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
@@ -96,6 +97,21 @@ export const deleteMessageForMe: RequestHandler = async (req, res, next) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Message deleted for your view only.",
+    data,
+  });
+};
+
+export const deleteMessageForAll: RequestHandler = async (req, res, next) => {
+  const payload: DeleteForAllPayload = {
+    accountId: req.account?.id!,
+    conversationId: req.params.conversationId,
+    messageId: req.params.messageId,
+  };
+
+  const data = await privateMessageService.deleteMessageForAll(payload);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Message deleted for everyone.",
     data,
   });
 };

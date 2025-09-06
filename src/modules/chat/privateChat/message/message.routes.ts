@@ -6,8 +6,10 @@ import {
   sendPrivateMessageZodSchema,
   markMessageReadZodSchema,
   deleteForMeZodSchema,
+  deleteForAllZodSchema,
 } from "./message.validation";
 import {
+  deleteMessageForAll,
   deleteMessageForMe,
   getMessages,
   markMessageRead,
@@ -43,5 +45,12 @@ router.post(
   authenticate,
   validate(deleteForMeZodSchema),
   deleteMessageForMe
+);
+
+router.post(
+  "/:messageId/delete-for-all",
+  authenticate,
+  validate(deleteForAllZodSchema),
+  deleteMessageForAll
 );
 export default router;

@@ -26,3 +26,9 @@ export type DeleteForMePayload = {
   conversationId: string;
   messageId: string;
 };
+
+export type DeleteForAllPayload = {
+  accountId: string;
+  conversationId: string;
+  messageId: string;
+};

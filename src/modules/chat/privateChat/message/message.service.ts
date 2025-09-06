@@ -8,6 +8,7 @@ import {
   SendPrivateMessagePayload,
   MarkMessageReadPayload,
   DeleteForMePayload,
+  DeleteForAllPayload,
 } from "./message.type";
 
 class PrivateMessage {
@@ -377,6 +378,164 @@ class PrivateMessage {
         deleted: true,
         deletedCount,
         unreadCount: newUnread,
+      };
+    });
+  }
+
+  async deleteMessageForAll(payload: DeleteForAllPayload) {
+    const { accountId, conversationId, messageId } = payload;
+
+    // verify participant exists
+    const requesterParticipant =
+      await prisma.privateConversationParticipant.findUnique({
+        where: {
+          conversationId_accountId: { conversationId, accountId },
+        },
+        select: { unreadCount: true },
+      });
+
+    if (!requesterParticipant) {
+      throw new APIError(
+        "You are not authorized to delete messages in this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // load message and verify it belongs to conversation + get senderId + createdAt
+      const message = await tx.privateMessage.findUnique({
+        where: { id: messageId },
+        select: {
+          id: true,
+          conversationId: true,
+          createdAt: true,
+          senderId: true,
+        },
+      });
+
+      if (!message) {
+        throw new APIError("Message not found", HttpStatus.BadRequest);
+      }
+      if (message.conversationId !== conversationId) {
+        throw new APIError(
+          "Message does not belong to this conversation",
+          HttpStatus.BadRequest
+        );
+      }
+
+      // Only the sender can delete for all
+      if (message.senderId !== accountId) {
+        throw new APIError(
+          "Only the message sender can delete this message for everyone",
+          HttpStatus.Forbidden
+        );
+      }
+
+      const now = new Date();
+      const TEN_MINUTES_MS = 10 * 60 * 1000;
+
+      // Fetch visibilities for this message
+      const visibilities = await tx.privateMessageVisibility.findMany({
+        where: { messageId },
+        select: { id: true, accountId: true, readAt: true, deletedAt: true },
+      });
+
+      // Find the other participant's visibility (1:1 chat)
+      const otherVisibility = visibilities.find(
+        (v) => v.accountId !== accountId
+      );
+
+      if (!otherVisibility) {
+        throw new APIError(
+          "Conversation participant visibility missing for the other user",
+          HttpStatus.BadRequest
+        );
+      }
+
+      // If the other participant has read the message, compute how long ago they read it
+      if (otherVisibility.readAt) {
+        const seenAgoMs =
+          now.getTime() - new Date(otherVisibility.readAt).getTime();
+
+        // Treat negative as "just seen".
+        const safeSeenAgoMs = Math.max(0, seenAgoMs);
+
+        // If they saw it 10+ minutes ago, forbid delete-for-all
+        if (safeSeenAgoMs >= TEN_MINUTES_MS) {
+          throw new APIError(
+            "Cannot delete for everyone: the other participant saw this message more than 10 minutes ago",
+            HttpStatus.Forbidden
+          );
+        }
+      }
+
+      // Determine which visibility rows to update (skip already-deleted)
+      const visToUpdate = visibilities.filter((v) => !v.deletedAt);
+
+      // Update all visibility rows sequentially (safer inside the transaction)
+      for (const v of visToUpdate) {
+        await tx.privateMessageVisibility.update({
+          where: { id: v.id },
+          data: {
+            deletedAt: now,
+            readAt: v.readAt ?? now,
+          },
+        });
+      }
+
+      // Mark the message itself as deleted (deleted for everyone)
+      await tx.privateMessage.update({
+        where: { id: messageId },
+        data: { deletedAt: now },
+      });
+
+      // Atomically adjust unreadCount for the other participant only (1:1 chat)
+      let updatedUnreadCount: {
+        accountId: string;
+        unreadCount: number;
+      } | null = null;
+
+      // Only decrement if other hasn't read and their visibility wasn't already deleted
+      if (!otherVisibility.deletedAt && !otherVisibility.readAt) {
+        const participantRow =
+          await tx.privateConversationParticipant.findUnique({
+            where: {
+              conversationId_accountId: {
+                conversationId,
+                accountId: otherVisibility.accountId,
+              },
+            },
+            select: { unreadCount: true },
+          });
+
+        if (participantRow) {
+          const currentUnread = participantRow.unreadCount ?? 0;
+          const newUnread = Math.max(0, currentUnread - 1);
+
+          await tx.privateConversationParticipant.update({
+            where: {
+              conversationId_accountId: {
+                conversationId,
+                accountId: otherVisibility.accountId,
+              },
+            },
+            data: { unreadCount: newUnread },
+          });
+
+          updatedUnreadCount = {
+            accountId: otherVisibility.accountId,
+            unreadCount: newUnread,
+          };
+        }
+      }
+
+      logger.info(
+        `Deleted message ${messageId} for all by account ${accountId} in conversation ${conversationId}`
+      );
+
+      return {
+        deleted: true,
+        updatedUnreadCount,
       };
     });
   }
