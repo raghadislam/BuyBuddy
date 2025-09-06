@@ -27,6 +27,8 @@ import {
   archiveProduct,
 } from "./product.controller";
 
+import { listTagsForProductCtrl } from "../tag/tag.controller";
+
 const router = Router();
 
 router.get("/", validate(listProductsQuerySchema), getAllProducts);
@@ -76,6 +78,13 @@ router.post(
   assertProductOwnership,
   validate(productIdParamSchema),
   archiveProduct
+);
+
+router.get(
+  "/:productId/tags",
+  authenticate,
+  assertProductOwnership,
+  listTagsForProductCtrl
 );
 
 export default router;
