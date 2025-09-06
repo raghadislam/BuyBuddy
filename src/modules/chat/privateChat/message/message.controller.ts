@@ -8,6 +8,7 @@ import {
   ReactToPrivateMessage,
   SendPrivateMessagePayload,
   MarkMessageReadPayload,
+  DeleteForMePayload,
 } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
@@ -80,6 +81,21 @@ export const markMessageRead: RequestHandler = async (req, res, next) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Message marked as read successfully.",
+    data,
+  });
+};
+
+export const deleteMessageForMe: RequestHandler = async (req, res, next) => {
+  const payload: DeleteForMePayload = {
+    accountId: req.account?.id!,
+    conversationId: req.params.conversationId,
+    messageId: req.params.messageId,
+  };
+
+  const data = await privateMessageService.deleteMessageForMe(payload);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Message deleted for your view only.",
     data,
   });
 };

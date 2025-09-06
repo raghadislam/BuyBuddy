@@ -7,6 +7,7 @@ import {
   ReactToPrivateMessage,
   SendPrivateMessagePayload,
   MarkMessageReadPayload,
+  DeleteForMePayload,
 } from "./message.type";
 
 class PrivateMessage {
@@ -281,6 +282,102 @@ class PrivateMessage {
         `Marked message ${messageId} of private conversation ${conversationId} as read for account ${accountId}`
       );
       return { marked, unreadCount: newUnread };
+    });
+  }
+
+  async deleteMessageForMe(payload: DeleteForMePayload) {
+    const { accountId, conversationId, messageId } = payload;
+
+    // verify participant exists and fetch current unreadCount
+    const participant = await prisma.privateConversationParticipant.findUnique({
+      where: {
+        conversationId_accountId: { conversationId, accountId },
+      },
+      select: {
+        unreadCount: true,
+      },
+    });
+
+    if (!participant) {
+      throw new APIError(
+        "You are not authorized to delete messages in this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // mark visibility.deletedAt for this user, unreadCount if needed.
+    return prisma.$transaction(async (tx) => {
+      // ensure message exists and belongs to conversation
+      const message = await tx.privateMessage.findUnique({
+        where: { id: messageId },
+        select: { id: true, conversationId: true },
+      });
+      if (!message) {
+        throw new APIError("Message not found", HttpStatus.BadRequest);
+      }
+      if (message.conversationId !== conversationId) {
+        throw new APIError(
+          "Message does not belong to this conversation",
+          HttpStatus.BadRequest
+        );
+      }
+
+      // Find existing visibility rows that would be affected for this user
+      const visibilitie = await tx.privateMessageVisibility.findUnique({
+        where: {
+          messageId_accountId: { messageId, accountId },
+        },
+        select: {
+          id: true,
+          readAt: true,
+          deletedAt: true,
+        },
+      });
+
+      if (!visibilitie || visibilitie.deletedAt) {
+        throw new APIError(
+          "You are not authorized to read this message",
+          HttpStatus.Forbidden
+        );
+      }
+
+      let deletedCount = 1;
+      let unreadDecrement = 0;
+
+      const updateResult = await tx.privateMessageVisibility.update({
+        where: { id: visibilitie.id },
+        data: {
+          deletedAt: new Date(),
+          readAt: visibilitie.readAt ?? new Date(),
+        },
+      });
+
+      if (!visibilitie.readAt) {
+        unreadDecrement = 1;
+      }
+
+      // adjust unreadCount atomically
+      const currentUnread = participant.unreadCount ?? 0;
+      const newUnread = Math.max(0, currentUnread - unreadDecrement);
+
+      await tx.privateConversationParticipant.update({
+        where: {
+          conversationId_accountId: { conversationId, accountId },
+        },
+        data: {
+          unreadCount: newUnread,
+        },
+      });
+
+      logger.info(
+        `Deleted message ${messageId} for account ${accountId} in conversation ${conversationId}`
+      );
+
+      return {
+        deleted: true,
+        deletedCount,
+        unreadCount: newUnread,
+      };
     });
   }
 }

@@ -20,3 +20,9 @@ export type MarkMessageReadPayload = {
   conversationId: string;
   messageId: string;
 };
+
+export type DeleteForMePayload = {
+  accountId: string;
+  conversationId: string;
+  messageId: string;
+};

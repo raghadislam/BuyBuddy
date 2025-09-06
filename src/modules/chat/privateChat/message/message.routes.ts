@@ -5,8 +5,10 @@ import {
   reactToMessageZodSchema,
   sendPrivateMessageZodSchema,
   markMessageReadZodSchema,
+  deleteForMeZodSchema,
 } from "./message.validation";
 import {
+  deleteMessageForMe,
   getMessages,
   markMessageRead,
   reactToMessage,
@@ -36,4 +38,10 @@ router.post(
   markMessageRead
 );
 
+router.post(
+  "/:messageId/delete-for-me",
+  authenticate,
+  validate(deleteForMeZodSchema),
+  deleteMessageForMe
+);
 export default router;
