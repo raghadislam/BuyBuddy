@@ -3,7 +3,10 @@ import logger from "../../../../config/logger.config";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
 import APIError from "../../../../utils/APIError";
 import { IGetPrivateMessages, IPrivateMessage } from "./message.interface";
-import { ReactToPrivateMessage } from "./message.type";
+import {
+  ReactToPrivateMessage,
+  SendPrivateMessagePayload,
+} from "./message.type";
 
 class PrivateMessage {
   async getMessages(payload: IGetPrivateMessages) {
@@ -121,6 +124,83 @@ class PrivateMessage {
     );
 
     return newMessage;
+  }
+
+  async sendMessage(payload: SendPrivateMessagePayload) {
+    const { accountId, conversationId, content, contentType, attachments } =
+      payload;
+
+    const participant = await prisma.privateConversationParticipant.findUnique({
+      where: {
+        conversationId_accountId: { conversationId, accountId },
+      },
+      select: { accountId: true },
+    });
+
+    if (!participant) {
+      throw new APIError(
+        "You are not authorized to send messages in this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // get participants to create visibilities
+      const participants = await tx.privateConversationParticipant.findMany({
+        where: {
+          conversationId,
+        },
+      });
+
+      // build visibilities data
+      const visibilities = participants.map((p) => ({
+        accountId: p.accountId,
+        readAt: p.accountId === accountId ? new Date() : null,
+      }));
+
+      // create message
+      const message = await tx.privateMessage.create({
+        data: {
+          content,
+          contentType,
+          conversationId,
+          senderId: accountId,
+          attachments: {
+            create: attachments,
+          },
+          visibilities: {
+            create: visibilities,
+          },
+        },
+        include: {
+          attachments: true,
+          visibilities: true,
+        },
+      });
+
+      // increment unreadCount for the other
+      await tx.privateConversationParticipant.updateMany({
+        where: { conversationId, accountId: { not: accountId } },
+        data: { unreadCount: { increment: 1 } },
+      });
+
+      // reset sender unreadCount to 0
+      await tx.privateConversationParticipant.update({
+        where: {
+          conversationId_accountId: { conversationId, accountId: accountId },
+        },
+        data: { unreadCount: 0 },
+      });
+
+      // update conversation timestamp
+      await tx.privateConversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      });
+
+      logger.info(`Message with id ${message.id} created`);
+      return message;
+    });
   }
 }
 

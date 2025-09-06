@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ReactionType } from "../../../../generated/prisma";
+import { ContentType, ReactionType } from "../../../../generated/prisma";
 
 export const getPrivateMessagesZodSchema = z.object({
   params: z
@@ -45,6 +45,32 @@ export const reactToMessageZodSchema = z.object({
   params: z
     .object({
       messageId: z.string().uuid({ message: "messageId must be a valid UUID" }),
+    })
+    .strict(),
+});
+
+export const attachmentSchema = z.object({
+  url: z.string().url(),
+  mimeType: z.string().optional(),
+});
+
+export const sendPrivateMessageZodSchema = z.object({
+  body: z
+    .object({
+      content: z.string().min(1, "content is required"),
+
+      contentType: z.nativeEnum(ContentType),
+
+      attachments: z.array(attachmentSchema).optional(),
+    })
+    .strict(),
+
+  params: z
+    .object({
+      conversationId: z
+        .string()
+        .min(1, "conversationId is required")
+        .uuid({ message: "recipientId must be a valid UUID" }),
     })
     .strict(),
 });

@@ -3,19 +3,18 @@ import express from "express";
 import {
   getPrivateMessagesZodSchema,
   reactToMessageZodSchema,
+  sendPrivateMessageZodSchema,
 } from "./message.validation";
-import { getMessages, reactToMessage } from "./message.controller";
+import { getMessages, reactToMessage, sendMessage } from "./message.controller";
 import { validate } from "../../../../middlewares/validation.middleware";
 import { authenticate } from "../../../../middlewares/authenticate.middleware";
 
 const router = express.Router({ mergeParams: true });
 
-router.get(
-  "/",
-  authenticate,
-  validate(getPrivateMessagesZodSchema),
-  getMessages
-);
+router
+  .route("/")
+  .get(authenticate, validate(getPrivateMessagesZodSchema), getMessages)
+  .post(authenticate, validate(sendPrivateMessageZodSchema), sendMessage);
 
 router.post(
   "/:messageId/react",

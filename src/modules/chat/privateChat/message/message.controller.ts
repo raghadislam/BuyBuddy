@@ -4,7 +4,10 @@ import { IGetPrivateMessages } from "./message.interface";
 import privateMessageService from "./message.service";
 import { sendResponse } from "../../../../utils/response";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
-import { ReactToPrivateMessage } from "./message.type";
+import {
+  ReactToPrivateMessage,
+  SendPrivateMessagePayload,
+} from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
   const accountId = req.account?.id;
@@ -40,6 +43,25 @@ export const reactToMessage: RequestHandler = async (req, res, next) => {
   return sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Message Reaction updated successfully.",
+    data: {
+      message,
+    },
+  });
+};
+
+export const sendMessage: RequestHandler = async (req, res, next) => {
+  const payload: SendPrivateMessagePayload = {
+    accountId: req.account?.id!,
+    conversationId: req.params.conversationId,
+    content: req.body.content,
+    contentType: req.body.contentType,
+    attachments: req.body.attachments ?? [],
+  };
+
+  const message = await privateMessageService.sendMessage(payload);
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Message created successfully.",
     data: {
       message,
     },
