@@ -14,6 +14,7 @@ import {
   IVerifyPasswordResetCode,
   IRefreshTokenPayload,
   IResetTokenPayload,
+  ResendVerificationCode,
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
@@ -187,6 +188,51 @@ class AuthService {
       `New account registered ID: ${account.id}, name: ${account.name} ${account.name}`
     );
     return account;
+  }
+
+  async resendVerificationCode(payload: ResendVerificationCode) {
+    const { email } = payload;
+    const account = await prisma.account.findUnique({
+      where: { email },
+      select: accountSafeSelect,
+    });
+
+    if (!account) {
+      throw new APIError(
+        "No account found with this email.",
+        HttpStatus.NotFound
+      );
+    }
+
+    // If account already verified or active, block resending
+    if (account.status === Status.ACTIVE) {
+      throw new APIError(
+        "This account is already verified.",
+        HttpStatus.BadRequest
+      );
+    }
+
+    // If suspended, block
+    if (account.status === Status.SUSPENDED) {
+      throw new APIError(
+        "Your account has been suspended. Please contact support.",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // Generate and send verification code
+    await this.generateAndSendVerificationCode(
+      account.status === Status.INACTIVE
+        ? "Activate your account"
+        : "Verify your email",
+      account.email
+    );
+
+    logger.info(`Verification code resent for account ID: ${account.id}`);
+    return {
+      message: "Verification code resent successfully",
+      account,
+    };
   }
 
   async verifyEmail(payload: IVerfiyEmail) {

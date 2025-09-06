@@ -32,6 +32,10 @@ export interface IVerfiyEmail {
   email: string;
 }
 
+export interface ResendVerificationCode {
+  email: string;
+}
+
 export interface ILoginPayload {
   email: string;
   password: string;

@@ -25,6 +25,14 @@ export const signupZodSchema = z.object({
     .strict(),
 });
 
+export const resendVerificationZodSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email({ message: "Invalid email address" }),
+    })
+    .strict(),
+});
+
 export const verifyEmailZodSchema = z.object({
   body: z
     .object({

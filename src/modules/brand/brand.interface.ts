@@ -7,16 +7,17 @@ export interface IBrand {
   accountId: string;
   description?: string;
   logo?: string;
-  category?: Category;
+  category: Category[];
   status: BrandStatus;
   instagramUrl?: string;
   tiktokUrl?: string;
+  bussinessPhone?: String;
   ownerName?: string;
   ownerNationalId?: string;
   ownerPhone?: string;
   crn?: string;
   taxId?: string;
-  paymentMethod?: PaymentMethod;
+  paymentMethod: PaymentMethod[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +25,7 @@ export interface IBrand {
 export interface IUpdateBrandProfile {
   description?: string;
   logo?: string;
-  category?: Category;
+  category: Category[];
   instagramUrl?: string;
   tiktokUrl?: string;
   ownerName?: string;
@@ -32,5 +33,5 @@ export interface IUpdateBrandProfile {
   ownerPhone?: string;
   crn?: string;
   taxId?: string;
-  paymentMethod?: PaymentMethod;
+  paymentMethod: PaymentMethod[];
 }
