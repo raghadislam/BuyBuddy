@@ -1,0 +1,257 @@
+import slugify from "slugify";
+import prisma from "../../config/prisma.config";
+import { Prisma, ProductStatus } from "../../generated/prisma";
+import APIError from "../../utils/APIError";
+import { HttpStatus } from "../../enums/httpStatus.enum";
+
+import {
+  ProductServices,
+  ListProductsQuery,
+  CreateProduct,
+  UpdateProduct,
+  PageOptions,
+} from "./product.interface";
+
+const MAX_LIMIT = 100;
+const normalizePage = ({ page = 1, limit = 20 }: PageOptions) => {
+  const p = Math.max(1, Math.min(page, 10_000));
+  const l = Math.max(1, Math.min(limit, MAX_LIMIT));
+  return { page: p, limit: l, skip: (p - 1) * l, take: l };
+};
+
+async function assertBrandOwnership(brandId: string, accountId: string) {
+  const brand = await prisma.brand.findUnique({
+    where: { id: brandId },
+    select: { accountId: true },
+  });
+
+  if (!brand || brand.accountId !== accountId)
+    throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
+}
+
+async function assertProductOwnership(productId: string, accountId: string) {
+  const prod = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { brand: { select: { accountId: true } } },
+  });
+  if (!prod || prod.brand.accountId !== accountId)
+    throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
+}
+
+const productCardSelect: Prisma.ProductSelect = {
+  id: true,
+  brandId: true,
+  category: true,
+  title: true,
+  slug: true,
+  material: true,
+  status: true,
+  createdAt: true,
+  images: {
+    select: { id: true, url: true, altText: true, sortOrder: true },
+    orderBy: { sortOrder: "asc" },
+  },
+  variants: {
+    select: { id: true, sku: true, price: true, currency: true, stock: true },
+    take: 8,
+  },
+};
+
+const productDetailSelect: Prisma.ProductSelect = {
+  id: true,
+  brandId: true,
+  category: true,
+  title: true,
+  slug: true,
+  description: true,
+  attributes: true,
+  material: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  images: {
+    select: { id: true, url: true, altText: true, sortOrder: true },
+    orderBy: { sortOrder: "asc" },
+  },
+  variants: {
+    select: {
+      id: true,
+      sku: true,
+      price: true,
+      currency: true,
+      stock: true,
+      images: {
+        select: { id: true, url: true, altText: true, sortOrder: true },
+        orderBy: { sortOrder: "asc" },
+      },
+      options: true,
+    },
+  },
+  tags: {
+    select: {
+      tag: { select: { id: true, name: true, slug: true } },
+      pinned: true,
+      addedAt: true,
+    },
+  },
+};
+
+export const ProductService: ProductServices = {
+  async getAllProducts(query: ListProductsQuery) {
+    const { page, limit, skip, take } = normalizePage(query);
+    const where: Prisma.ProductWhereInput = {};
+    if (query.status) where.status = query.status;
+    if (query.brandId) where.brandId = query.brandId;
+    if (query.category) where.category = query.category;
+    if (query.material) where.material = query.material;
+    if (query.q) {
+      where.OR = [
+        { title: { contains: query.q, mode: "insensitive" } },
+        { description: { contains: query.q, mode: "insensitive" } },
+      ];
+    }
+
+    if (query.minPrice || query.maxPrice) {
+      where.variants = {
+        some: {
+          ...(query.minPrice ? { price: { gte: query.minPrice } } : {}),
+          ...(query.maxPrice ? { price: { lte: query.maxPrice } } : {}),
+        },
+      };
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+        select: productCardSelect,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    return { items, page, limit, total };
+  },
+
+  async getProductById(id: string) {
+    return await prisma.product.findFirst({
+      where: { id },
+      select: productDetailSelect,
+    });
+  },
+
+  async getProductBySlug(slug: string) {
+    return await prisma.product.findFirst({
+      where: { slug },
+      select: productDetailSelect,
+    });
+  },
+
+  async createProduct(payload: CreateProduct, actorAccountId: string) {
+    await assertBrandOwnership(payload.brandId, actorAccountId);
+    const slug =
+      payload.slug ?? slugify(payload.title, { lower: true, strict: true });
+
+    return prisma.product.create({
+      data: {
+        brandId: payload.brandId,
+        category: payload.category,
+        title: payload.title,
+        slug,
+        description: payload.description ?? undefined,
+        attributes: payload.attributes ?? undefined,
+        material: payload.material ?? undefined,
+        status: payload.status ?? "DRAFT",
+        images: payload.images?.length
+          ? {
+              create: payload.images.map((i, idx) => ({
+                url: i.url,
+                altText: i.altText ?? undefined,
+                sortOrder: i.sortOrder ?? idx,
+              })),
+            }
+          : undefined,
+      },
+      select: productDetailSelect,
+    });
+  },
+
+  async updateProduct(
+    productId: string,
+    payload: UpdateProduct,
+    actorAccountId: string
+  ) {
+    await assertProductOwnership(productId, actorAccountId);
+
+    const data: Prisma.ProductUpdateInput = {
+      category: payload.category ?? undefined,
+      title: payload.title ?? undefined,
+      slug:
+        payload.slug ??
+        (payload.title
+          ? slugify(payload.title, { lower: true, strict: true })
+          : undefined),
+      description: payload.description ?? undefined,
+      attributes: payload.attributes ?? undefined,
+      material: payload.material ?? undefined,
+      status: payload.status ?? undefined,
+    };
+
+    if (payload.images) {
+      data.images = {
+        deleteMany: { productId },
+        create: payload.images.map((i, idx) => ({
+          url: i.url,
+          altText: i.altText ?? undefined,
+          sortOrder: i.sortOrder ?? idx,
+        })),
+      };
+    }
+
+    return prisma.product.update({
+      where: { id: productId },
+      data,
+      select: productDetailSelect,
+    });
+  },
+
+  async deleteProductById(productId: string, actorAccountId: string) {
+    await assertProductOwnership(productId, actorAccountId);
+    await prisma.$transaction(async (tx) => {
+      await tx.productTag.deleteMany({ where: { productId } });
+      await tx.productImage.deleteMany({ where: { productId } });
+      await tx.variantImage.deleteMany({ where: { variant: { productId } } });
+      await tx.variantOption.deleteMany({ where: { variant: { productId } } });
+      await tx.variant.deleteMany({ where: { productId } });
+      await tx.product.delete({ where: { id: productId } });
+    });
+    return { id: productId };
+  },
+  async publish(productId: string, actorAccountId: string) {
+    await assertProductOwnership(productId, actorAccountId);
+    return prisma.product.update({
+      where: { id: productId },
+      data: { status: "PUBLISHED" },
+      select: { id: true, status: true },
+    });
+  },
+
+  async unpublish(productId: string, actorAccountId: string) {
+    await assertProductOwnership(productId, actorAccountId);
+    return prisma.product.update({
+      where: { id: productId },
+      data: { status: "DRAFT" },
+      select: { id: true, status: true },
+    });
+  },
+
+  async archive(productId: string, actorAccountId: string) {
+    await assertProductOwnership(productId, actorAccountId);
+    return prisma.product.update({
+      where: { id: productId },
+      data: { status: "ARCHIVED" },
+      select: { id: true, status: true },
+    });
+  },
+};
