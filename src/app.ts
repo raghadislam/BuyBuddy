@@ -6,6 +6,7 @@ import authRouter from "./modules/auth/auth.routes";
 import userRouter from "./modules/user/user.routes";
 import brandRouter from "./modules/brand/brand.routes";
 import chatRouter from "./modules/chat/chat.routes";
+import productRouter from "./modules/product/product.routes";
 import { notFound } from "./middlewares/notFound.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware";
@@ -22,6 +23,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/brands", brandRouter);
 app.use("/api/v1/chats", chatRouter);
+app.use("/api/v1/products", productRouter);
 
 // 404 catcher — should come after routes
 app.use(notFound);
