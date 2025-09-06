@@ -1,34 +1,17 @@
 import slugify from "slugify";
 import prisma from "../../config/prisma.config";
-import { Prisma, ProductStatus } from "../../generated/prisma";
-import APIError from "../../utils/APIError";
-import { HttpStatus } from "../../enums/httpStatus.enum";
+import { Prisma } from "../../generated/prisma";
 import { normalizePage } from "../../utils/pagination";
+import {
+  assertBrandOwnership,
+  assertProductOwnership,
+} from "../../utils/assertOwnership";
 import {
   ProductServices,
   ListProductsQuery,
   CreateProduct,
   UpdateProduct,
 } from "./product.interface";
-
-async function assertBrandOwnership(brandId: string, accountId: string) {
-  const brand = await prisma.brand.findUnique({
-    where: { id: brandId },
-    select: { accountId: true },
-  });
-
-  if (!brand || brand.accountId !== accountId)
-    throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
-}
-
-async function assertProductOwnership(productId: string, accountId: string) {
-  const prod = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { brand: { select: { accountId: true } } },
-  });
-  if (!prod || prod.brand.accountId !== accountId)
-    throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
-}
 
 const productCardSelect: Prisma.ProductSelect = {
   id: true,
