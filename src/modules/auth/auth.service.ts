@@ -17,9 +17,7 @@ import {
 } from "./auth.interface";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
-import { Status } from "../../enums/status.enum";
-import { RevokedReason } from "../../enums/revokedReason.enum";
-import { Provider } from "../../enums/provider.enum";
+import { Status, RevokedReason, Provider, Role } from "../../generated/prisma";
 import {
   sendVerificationCode,
   sendAccountVerifiedEmail,
@@ -43,7 +41,6 @@ import {
 } from "./auth.select";
 import { generateNumericCode, hashCode, compareCode } from "./code.util";
 import { HttpStatus } from "../../enums/httpStatus.enum";
-import { Role } from "../../enums/role.enum";
 
 class AuthService {
   private async generateAndSendVerificationCode(

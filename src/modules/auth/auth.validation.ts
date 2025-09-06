@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Role } from "../../enums/role.enum";
+import { Role } from "../../generated/prisma";
 
 export const signupZodSchema = z.object({
   body: z
