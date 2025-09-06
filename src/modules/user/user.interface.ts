@@ -1,5 +1,5 @@
 import { IAccount } from "../auth/auth.interface";
-import { Gender } from "../../generated/prisma";
+import { Gender, PaymentMethod } from "../../generated/prisma";
 
 export interface IUser {
   id: string;
@@ -11,6 +11,9 @@ export interface IUser {
   gender?: Gender;
   createdAt: Date;
   updatedAt: Date;
+  birthDate?: Date;
+  landmark?: string;
+  paymentMethods: PaymentMethod[];
 }
 
 export interface IUpdateUserProfile {
@@ -18,4 +21,10 @@ export interface IUpdateUserProfile {
   photo?: string;
   phone?: string;
   gender?: Gender;
+  government?: string;
+  city?: string;
+  primaryAddress?: string;
+  secondaryAddress?: string;
+  landmark?: string;
+  paymentMethods: PaymentMethod[];
 }

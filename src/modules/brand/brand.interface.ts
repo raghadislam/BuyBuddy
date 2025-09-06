@@ -25,13 +25,14 @@ export interface IBrand {
 export interface IUpdateBrandProfile {
   description?: string;
   logo?: string;
-  category: Category[];
+  categories: Category[];
   instagramUrl?: string;
   tiktokUrl?: string;
+  bussinessPhone?: string;
   ownerName?: string;
   ownerNationalId?: string;
   ownerPhone?: string;
   crn?: string;
   taxId?: string;
-  paymentMethod: PaymentMethod[];
+  paymentMethods: PaymentMethod[];
 }

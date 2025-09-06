@@ -125,30 +125,31 @@ model Account {
 }
 
 model User {
-  id        String          @id @default(uuid())
-  accountId String          @unique
-  account   Account         @relation(fields: [accountId], references: [id])
-  userName  String          @unique
-  photo     String?
-  phone     String?
-  gender    Gender?
-  birthDate DateTime?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  payments  PaymentMethod[]
-  addresses Address[]
+  id             String          @id @default(uuid())
+  accountId      String          @unique
+  account        Account         @relation(fields: [accountId], references: [id])
+  userName       String          @unique
+  photo          String?
+  phone          String?
+  gender         Gender?
+  birthDate      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  paymentMethods PaymentMethod[]
+  addresses      Address[]
 }
 
 model Address {
-  id         String   @id @default(uuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  government String?
-  city       String?
-  street     String?
-  isPrimary  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  government  String?
+  city        String?
+  addressLine String?
+  landmark    String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([userId])
 }
@@ -159,7 +160,7 @@ model Brand {
   account         Account         @relation(fields: [accountId], references: [id])
   description     String?
   logo            String?
-  category        Category[]
+  categories      Category[]
   status          BrandStatus     @default(DRAFT)
   instagramUrl    String?
   tiktokUrl       String?
@@ -169,7 +170,7 @@ model Brand {
   ownerPhone      String?
   crn             String?
   taxId           String?
-  paymentMethod   PaymentMethod[]
+  paymentMethods  PaymentMethod[]
   Products        Product[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
