@@ -4,6 +4,7 @@ import { IGetPrivateMessages } from "./message.interface";
 import privateMessageService from "./message.service";
 import { sendResponse } from "../../../../utils/response";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
+import { ReactToPrivateMessage } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
   const accountId = req.account?.id;
@@ -24,5 +25,23 @@ export const getMessages: RequestHandler = async (req, res, next) => {
     statusCode: HttpStatus.OK,
     message: "Messages fetched successfully.",
     data,
+  });
+};
+
+export const reactToMessage: RequestHandler = async (req, res, next) => {
+  const payload: ReactToPrivateMessage = {
+    accountId: req.account?.id!,
+    messageId: req.params.messageId,
+    reactionType: req.body?.reactionType,
+  };
+
+  const message = await privateMessageService.reactToMessage(payload);
+
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Message Reaction updated successfully.",
+    data: {
+      message,
+    },
   });
 };

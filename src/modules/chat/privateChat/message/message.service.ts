@@ -2,7 +2,8 @@ import prisma from "../../../../config/prisma.config";
 import logger from "../../../../config/logger.config";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
 import APIError from "../../../../utils/APIError";
-import { IGetPrivateMessages } from "./message.interface";
+import { IGetPrivateMessages, IPrivateMessage } from "./message.interface";
+import { ReactToPrivateMessage } from "./message.type";
 
 class PrivateMessage {
   async getMessages(payload: IGetPrivateMessages) {
@@ -73,6 +74,53 @@ class PrivateMessage {
       `Messages fetched successfully for conversation: ${conversationId}`
     );
     return { messages, nextCursor };
+  }
+
+  async reactToMessage(payload: ReactToPrivateMessage) {
+    const { accountId, messageId, reactionType } = payload;
+
+    const message = await prisma.privateMessage.findUnique({
+      where: {
+        id: messageId,
+        visibilities: {
+          some: { accountId, deletedAt: null },
+        },
+      },
+    });
+
+    if (!message) {
+      throw new APIError(
+        "You are not authorized to access this message or it does not exist",
+        HttpStatus.Forbidden
+      );
+    }
+
+    if (message.senderId === accountId) {
+      throw new APIError(
+        "You are not allowed to react to your own messages",
+        HttpStatus.Forbidden
+      );
+    }
+
+    // Toggle or update reaction
+    const newMessage = await prisma.privateMessage.update({
+      where: { id: messageId },
+      data:
+        reactionType === message.reactionType
+          ? { reactedById: null, reactionType: null }
+          : { reactedById: accountId, reactionType },
+      select: {
+        id: true,
+        reactedById: true,
+        reactionType: true,
+      },
+    });
+
+    logger.info(
+      `Message with id ${messageId} reacted by ${accountId} with ${reactionType}`
+    );
+
+    return newMessage;
   }
 }
 

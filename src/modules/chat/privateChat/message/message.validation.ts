@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ReactionType } from "../../../../generated/prisma";
+
 export const getPrivateMessagesZodSchema = z.object({
   params: z
     .object({
@@ -29,6 +31,20 @@ export const getPrivateMessagesZodSchema = z.object({
           return Number(val);
         }, z.number().int().min(1).max(100).optional())
         .default(50),
+    })
+    .strict(),
+});
+
+export const reactToMessageZodSchema = z.object({
+  body: z
+    .object({
+      reactionType: z.nativeEnum(ReactionType),
+    })
+    .strict(),
+
+  params: z
+    .object({
+      messageId: z.string().uuid({ message: "messageId must be a valid UUID" }),
     })
     .strict(),
 });
