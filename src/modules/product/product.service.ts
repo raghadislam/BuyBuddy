@@ -3,10 +3,7 @@ import prisma from "../../config/prisma.config";
 import { Prisma } from "../../generated/prisma";
 import { normalizePage } from "../../utils/pagination";
 import { productCardSelect, productDetailSelect } from "./product.select";
-import {
-  assertBrandOwnership,
-  assertProductOwnership,
-} from "../../utils/assertOwnership";
+
 import {
   ProductServices,
   ListProductsQuery,
@@ -67,7 +64,6 @@ export const ProductService: ProductServices = {
   },
 
   async createProduct(payload: CreateProduct, actorAccountId: string) {
-    await assertBrandOwnership(payload.brandId, actorAccountId);
     const slug =
       payload.slug ?? slugify(payload.title, { lower: true, strict: true });
 
@@ -100,8 +96,6 @@ export const ProductService: ProductServices = {
     payload: UpdateProduct,
     actorAccountId: string
   ) {
-    await assertProductOwnership(productId, actorAccountId);
-
     const data: Prisma.ProductUpdateInput = {
       category: payload.category ?? undefined,
       title: payload.title ?? undefined,
@@ -135,7 +129,6 @@ export const ProductService: ProductServices = {
   },
 
   async deleteProductById(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     await prisma.$transaction(async (tx) => {
       await tx.productTag.deleteMany({ where: { productId } });
       await tx.productImage.deleteMany({ where: { productId } });
@@ -147,7 +140,6 @@ export const ProductService: ProductServices = {
     return { id: productId };
   },
   async publish(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     return prisma.product.update({
       where: { id: productId },
       data: { status: "PUBLISHED" },
@@ -156,7 +148,6 @@ export const ProductService: ProductServices = {
   },
 
   async unpublish(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     return prisma.product.update({
       where: { id: productId },
       data: { status: "DRAFT" },
@@ -165,7 +156,6 @@ export const ProductService: ProductServices = {
   },
 
   async archive(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     return prisma.product.update({
       where: { id: productId },
       data: { status: "ARCHIVED" },

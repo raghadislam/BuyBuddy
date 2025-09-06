@@ -3,6 +3,11 @@ import { authenticate } from "../../middlewares/authenticate.middleware";
 import { validate } from "../../middlewares/validation.middleware";
 
 import {
+  assertBrandOwnership,
+  assertProductOwnership,
+} from "../../middlewares/assertOwnership.middleware";
+
+import {
   createProductSchema,
   updateProductSchema,
   listProductsQuerySchema,
@@ -24,20 +29,21 @@ import {
 
 const router = Router();
 
-/** Public browse */
 router.get("/", validate(listProductsQuerySchema), getAllProducts);
 router.get("/slug/:slug", validate(productSlugParamSchema), getProductBySlug);
 router.get("/:productId", validate(productIdParamSchema), getProductById);
 
-/** Product tag browsing (public) */
-// router.get("/tags", validate(tagsBrowseQuerySchema), listAllTagsCtrl);
-// router.get("/tags/:tagSlug/products", listProductsByTagSlugCtrl);
-
-/** Auth required for writes (brand ownership enforced in service) */
-router.post("/", authenticate, validate(createProductSchema), createProduct);
+router.post(
+  "/",
+  authenticate,
+  validate(createProductSchema),
+  assertBrandOwnership,
+  createProduct
+);
 router.patch(
   "/:productId",
   authenticate,
+  assertProductOwnership,
   validate(productIdParamSchema),
   validate(updateProductSchema),
   updateProduct
@@ -45,6 +51,7 @@ router.patch(
 router.delete(
   "/:productId",
   authenticate,
+  assertProductOwnership,
   validate(productIdParamSchema),
   deleteProduct
 );
@@ -52,18 +59,21 @@ router.delete(
 router.post(
   "/:productId/publish",
   authenticate,
+  assertProductOwnership,
   validate(productIdParamSchema),
   publishProduct
 );
 router.post(
   "/:productId/unpublish",
   authenticate,
+  assertProductOwnership,
   validate(productIdParamSchema),
   unpublishProduct
 );
 router.post(
   "/:productId/archive",
   authenticate,
+  assertProductOwnership,
   validate(productIdParamSchema),
   archiveProduct
 );
