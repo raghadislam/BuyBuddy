@@ -11,7 +11,7 @@ import {
   UpdateProduct,
 } from "./product.interface";
 
-export const ProductService: ProductServices = {
+class ProductService implements ProductServices {
   async getAllProducts(query: ListProductsQuery) {
     const { page, limit, skip, take } = normalizePage(query);
     const where: Prisma.ProductWhereInput = {};
@@ -47,21 +47,21 @@ export const ProductService: ProductServices = {
     ]);
 
     return { items, page, limit, total };
-  },
+  }
 
   async getProductById(id: string) {
     return await prisma.product.findFirst({
       where: { id },
       select: productDetailSelect,
     });
-  },
+  }
 
   async getProductBySlug(slug: string) {
     return await prisma.product.findFirst({
       where: { slug },
       select: productDetailSelect,
     });
-  },
+  }
 
   async createProduct(payload: CreateProduct, actorAccountId: string) {
     const slug =
@@ -89,7 +89,7 @@ export const ProductService: ProductServices = {
       },
       select: productDetailSelect,
     });
-  },
+  }
 
   async updateProduct(
     productId: string,
@@ -126,7 +126,7 @@ export const ProductService: ProductServices = {
       data,
       select: productDetailSelect,
     });
-  },
+  }
 
   async deleteProductById(productId: string, actorAccountId: string) {
     await prisma.$transaction(async (tx) => {
@@ -138,14 +138,15 @@ export const ProductService: ProductServices = {
       await tx.product.delete({ where: { id: productId } });
     });
     return { id: productId };
-  },
+  }
+
   async publish(productId: string, actorAccountId: string) {
     return prisma.product.update({
       where: { id: productId },
       data: { status: "PUBLISHED" },
       select: { id: true, status: true },
     });
-  },
+  }
 
   async unpublish(productId: string, actorAccountId: string) {
     return prisma.product.update({
@@ -153,7 +154,7 @@ export const ProductService: ProductServices = {
       data: { status: "DRAFT" },
       select: { id: true, status: true },
     });
-  },
+  }
 
   async archive(productId: string, actorAccountId: string) {
     return prisma.product.update({
@@ -161,5 +162,7 @@ export const ProductService: ProductServices = {
       data: { status: "ARCHIVED" },
       select: { id: true, status: true },
     });
-  },
-};
+  }
+}
+
+export default new ProductService();

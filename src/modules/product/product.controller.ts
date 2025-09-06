@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
-import { ProductService } from "./product.service";
+import productService from "./product.service";
 import { toPrismaJson } from "./product.validation";
 import { sendResponse } from "../../utils/response";
 
@@ -10,7 +10,7 @@ export async function getAllProducts(
   res: Response,
   next: NextFunction
 ) {
-  const data = await ProductService.getAllProducts(req.query as any);
+  const data = await productService.getAllProducts(req.query as any);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -24,7 +24,7 @@ export async function getProductById(
   next: NextFunction
 ) {
   const { productId } = req.params as { productId: string };
-  const data = await ProductService.getProductById(productId);
+  const data = await productService.getProductById(productId);
   if (!data)
     return sendResponse(res, {
       statusCode: HttpStatus.NotFound,
@@ -43,7 +43,7 @@ export async function getProductBySlug(
   next: NextFunction
 ) {
   const { slug } = req.params as { slug: string };
-  const data = await ProductService.getProductBySlug(slug);
+  const data = await productService.getProductBySlug(slug);
 
   if (!data)
     return sendResponse(res, {
@@ -68,7 +68,7 @@ export async function createProduct(
 
   const body = req.body as any;
   const payload = { ...body, attributes: toPrismaJson(body.attributes) };
-  const created = await ProductService.createProduct(payload, actorAccountId);
+  const created = await productService.createProduct(payload, actorAccountId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -88,7 +88,7 @@ export async function updateProduct(
   const { productId } = req.params as { productId: string };
   const body = req.body as any; // validated
   const payload = { ...body, attributes: toPrismaJson(body.attributes) };
-  const updated = await ProductService.updateProduct(
+  const updated = await productService.updateProduct(
     productId,
     payload,
     actorAccountId
@@ -110,7 +110,7 @@ export async function deleteProduct(
     throw new APIError("Unauthorized", HttpStatus.Unauthorized);
 
   const { productId } = req.params as { productId: string };
-  await ProductService.deleteProductById(productId, actorAccountId);
+  await productService.deleteProductById(productId, actorAccountId);
 
   sendResponse(res, {
     statusCode: HttpStatus.NoContent,
@@ -127,7 +127,7 @@ export async function publishProduct(
     throw new APIError("Unauthorized", HttpStatus.Unauthorized);
 
   const { productId } = req.params as { productId: string };
-  const out = await ProductService.publish(productId, actorAccountId);
+  const out = await productService.publish(productId, actorAccountId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -145,7 +145,7 @@ export async function unpublishProduct(
     throw new APIError("Unauthorized", HttpStatus.Unauthorized);
 
   const { productId } = req.params as { productId: string };
-  const out = await ProductService.unpublish(productId, actorAccountId);
+  const out = await productService.unpublish(productId, actorAccountId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -163,7 +163,7 @@ export async function archiveProduct(
     throw new APIError("Unauthorized", HttpStatus.Unauthorized);
 
   const { productId } = req.params as { productId: string };
-  const out = await ProductService.archive(productId, actorAccountId);
+  const out = await productService.archive(productId, actorAccountId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
