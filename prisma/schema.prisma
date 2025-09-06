@@ -125,36 +125,54 @@ model Account {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  accountId String   @unique
-  account   Account  @relation(fields: [accountId], references: [id])
-  userName  String
+  id        String          @id @default(uuid())
+  accountId String          @unique
+  account   Account         @relation(fields: [accountId], references: [id])
+  userName  String          @unique
   photo     String?
   phone     String?
   gender    Gender?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  birthDate DateTime
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  payments  PaymentMethod[]
+  addresses Address[]
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  government String?
+  city       String?
+  street     String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Brand {
-  id              String         @id @default(uuid())
-  accountId       String         @unique
-  account         Account        @relation(fields: [accountId], references: [id])
+  id              String          @id @default(uuid())
+  accountId       String          @unique
+  account         Account         @relation(fields: [accountId], references: [id])
   description     String?
   logo            String?
-  category        Category?
-  status          BrandStatus    @default(DRAFT)
+  category        Category[]
+  status          BrandStatus     @default(DRAFT)
   instagramUrl    String?
   tiktokUrl       String?
+  bussinessPhone  String?
   ownerName       String?
   ownerNationalId String?
   ownerPhone      String?
   crn             String?
   taxId           String?
-  paymentMethod   PaymentMethod?
+  paymentMethod   PaymentMethod[]
   Products        Product[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([status])
 }
