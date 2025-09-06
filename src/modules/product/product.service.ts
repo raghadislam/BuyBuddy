@@ -3,21 +3,13 @@ import prisma from "../../config/prisma.config";
 import { Prisma, ProductStatus } from "../../generated/prisma";
 import APIError from "../../utils/APIError";
 import { HttpStatus } from "../../enums/httpStatus.enum";
-
+import { normalizePage } from "../../utils/pagination";
 import {
   ProductServices,
   ListProductsQuery,
   CreateProduct,
   UpdateProduct,
-  PageOptions,
 } from "./product.interface";
-
-const MAX_LIMIT = 100;
-const normalizePage = ({ page = 1, limit = 20 }: PageOptions) => {
-  const p = Math.max(1, Math.min(page, 10_000));
-  const l = Math.max(1, Math.min(limit, MAX_LIMIT));
-  return { page: p, limit: l, skip: (p - 1) * l, take: l };
-};
 
 async function assertBrandOwnership(brandId: string, accountId: string) {
   const brand = await prisma.brand.findUnique({
