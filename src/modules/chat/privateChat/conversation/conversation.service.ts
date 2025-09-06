@@ -12,6 +12,7 @@ import {
 } from "./conversation.interface";
 import { Role, Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
+import { markReadPayload } from "./conversation.type";
 
 class PrivateConverstionService {
   private formatConversation(
@@ -388,6 +389,94 @@ class PrivateConverstionService {
     return prisma.privateConversation.update({
       where: { id: conversationId },
       data: { archivedAt: null },
+    });
+  }
+
+  async markRead(payload: markReadPayload) {
+    // get the participant and current unreadCount
+    const { conversationId, accountId, upToMessageId } = payload;
+    const participant = await prisma.privateConversationParticipant.findUnique({
+      where: {
+        conversationId_accountId: { conversationId, accountId },
+      },
+      select: {
+        unreadCount: true,
+      },
+    });
+
+    if (!participant) {
+      throw new APIError(
+        "You are not authorized to read messages in this conversation or it does not exist",
+        HttpStatus.Forbidden
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // validate upToMessageId (if provided) and ensure it belongs to the conversation
+      let cutoffCreatedAt: Date | undefined;
+      if (upToMessageId) {
+        const upToMessage = await tx.privateMessage.findUnique({
+          where: { id: upToMessageId },
+          select: { createdAt: true, conversationId: true },
+        });
+        if (!upToMessage) {
+          throw new APIError("Invalid upToMessage ID", HttpStatus.BadRequest);
+        }
+        if (upToMessage.conversationId !== conversationId) {
+          throw new APIError(
+            "Message does not belong to this conversation",
+            HttpStatus.BadRequest
+          );
+        }
+        cutoffCreatedAt = upToMessage.createdAt;
+      }
+
+      // get ids
+      const messages = await tx.privateMessage.findMany({
+        where: {
+          deletedAt: null,
+          conversationId,
+          ...(cutoffCreatedAt && {
+            createdAt: { lte: cutoffCreatedAt },
+          }),
+          visibilities: {
+            some: {
+              accountId,
+              deletedAt: null,
+            },
+          },
+        },
+        select: { id: true },
+      });
+
+      //Mark read in visibilities for this account
+      await tx.privateMessageVisibility.updateMany({
+        where: {
+          messageId: { in: messages.map((m) => m.id) },
+          accountId,
+        },
+        data: {
+          readAt: new Date(),
+        },
+      });
+
+      const marked = messages.length ?? 0;
+
+      // adjust unreadCount atomically
+      let newUnread = participant.unreadCount ?? 0;
+      await tx.privateConversationParticipant.update({
+        where: {
+          conversationId_accountId: { conversationId, accountId },
+        },
+        data: {
+          unreadCount: newUnread,
+        },
+      });
+
+      logger.info(
+        `Marked messages of private conversation ${conversationId} as read`
+      );
+      return { marked, unreadCount: newUnread };
     });
   }
 }

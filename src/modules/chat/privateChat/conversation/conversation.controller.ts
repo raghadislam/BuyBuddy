@@ -10,6 +10,7 @@ import {
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
+import { markReadPayload } from "./conversation.type";
 
 export const getOrCreatePrivateConversation: RequestHandler = async (
   req,
@@ -93,6 +94,22 @@ export const unarchivePrivateConversation: RequestHandler = async (
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Private conversation unarchived successfully.",
+    data,
+  });
+};
+
+export const markRead: RequestHandler = async (req, res, next) => {
+  const accountId = (req as any).user?.id ?? (res.locals as any).accountId;
+  const payload: markReadPayload = {
+    accountId: req.account?.id!,
+    conversationId: req.params.conversationId,
+    upToMessageId: req.query.upToMessageId as string | undefined,
+  };
+
+  const data = await privateConverstionService.markRead(payload);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Private conversation messages marked as read successfully.",
     data,
   });
 };
