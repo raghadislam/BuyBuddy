@@ -1,10 +1,9 @@
-import { IAccount } from "../modules/auth/auth.interface";
+import { Account } from "@prisma/client";
 
 declare global {
   namespace Express {
-    export interface Account extends IAccount {}
     interface Request {
-      account?: IAccount;
+      account?: Account;
     }
   }
 }

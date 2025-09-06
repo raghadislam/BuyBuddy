@@ -1,6 +1,5 @@
 import { RequestHandler } from "express";
 
-import { IGetPrivateMessages } from "./message.interface";
 import privateMessageService from "./message.service";
 import { sendResponse } from "../../../../utils/response";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
@@ -11,6 +10,7 @@ import {
   DeleteForMePayload,
   DeleteForAllPayload,
   SearchMessagesPayload,
+  GetPrivateMessages,
 } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
@@ -18,7 +18,7 @@ export const getMessages: RequestHandler = async (req, res, next) => {
   const { conversationId } = req.params;
   const { cursor, since, limit } = req.query;
 
-  const payload: IGetPrivateMessages = {
+  const payload: GetPrivateMessages = {
     accountId: accountId!,
     conversationId,
     cursor: cursor as string,

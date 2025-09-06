@@ -1,7 +1,8 @@
 import { Role, Status, Provider } from "../../generated/prisma";
-import { IBrand } from "../brand/brand.interface";
-import { IUser } from "../user/user.interface";
-export interface IAccount {
+import { Brand } from "../brand/brand.type";
+import { User } from "../user/user.type";
+
+export type Account = {
   id: string;
   name: string;
   email: string;
@@ -16,71 +17,75 @@ export interface IAccount {
   passwordResetCodeExpiresAt?: Date;
   provider: Provider;
   providerId?: string | null;
-  user?: IUser | null;
-  brand?: IBrand | null;
-}
+  user?: User | null;
+  brand?: Brand | null;
+};
 
-export interface ISignupPayload {
+export type SignupPayload = {
   name: string;
   email: string;
   password: string;
   role: Extract<Role, "USER" | "BRAND">;
   userName?: string;
-}
-export interface IVerfiyEmail {
+};
+export type VerfiyEmail = {
   code: string;
   email: string;
-}
+};
 
-export interface ResendVerificationCode {
+export type esendVerificationCode = {
   email: string;
-}
+};
 
-export interface ILoginPayload {
+export type LoginPayload = {
   email: string;
   password: string;
-}
+};
 
-export interface IAccessTokenPayload {
+export type AccessTokenPayload = {
   id: string;
   role: Role;
   createdAt: Date;
   status: Status;
   email: string;
-}
+};
 
-export interface IRefreshTokenPayload {
+export type RefreshTokenPayload = {
   id: string;
   jti: string;
-}
+};
 
-export interface IResetTokenPayload {
+export type ResetTokenPayload = {
   purpose: string;
   accountId: string;
   jti: string;
-}
+};
 
-export interface IRefreshPayload {
+export type RefreshPayload = {
   refreshToken: string;
-}
+};
 
-export interface ILogoutPayload {
+export type LogoutPayload = {
   refreshToken: string;
-}
+};
 
-export interface IForgetPasswordPayload {
+export type ForgetPasswordPayload = {
   email: string;
-}
+};
 
-export interface IVerifyPasswordResetCode {
+export type VerifyPasswordResetCode = {
   code: string;
   email: string;
-}
+};
 
-export interface IResetPasswordPayload {
+export type ResetPasswordPayload = {
   newPassword: string;
   email: string;
   resetToken: string;
-}
+};
 
-export interface IHandleGoogleCallbackPayload extends IAccount {}
+export type HandleGoogleCallbackPayload = Account;
+
+export type ResendVerificationCode = {
+  email: string;
+};

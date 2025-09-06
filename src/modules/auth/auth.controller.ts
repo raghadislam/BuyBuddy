@@ -1,21 +1,21 @@
 import { RequestHandler } from "express";
 
 import {
-  ISignupPayload,
-  IVerfiyEmail,
-  ILoginPayload,
-  IForgetPasswordPayload,
-  IResetPasswordPayload,
-  IHandleGoogleCallbackPayload,
-  IVerifyPasswordResetCode,
+  SignupPayload,
+  VerfiyEmail,
+  LoginPayload,
+  ForgetPasswordPayload,
+  ResetPasswordPayload,
+  HandleGoogleCallbackPayload,
+  VerifyPasswordResetCode,
   ResendVerificationCode,
-} from "./auth.interface";
+} from "./auth.type";
 import authService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 
 export const signup: RequestHandler = async (req, res) => {
-  const payload: ISignupPayload = req.body;
+  const payload: SignupPayload = req.body;
   const account = await authService.signup(payload);
 
   sendResponse(res, {
@@ -41,7 +41,7 @@ export const resendVerification: RequestHandler = async (req, res, next) => {
 };
 
 export const verifyEmail: RequestHandler = async (req, res) => {
-  const payload: IVerfiyEmail = req.body;
+  const payload: VerfiyEmail = req.body;
   const { account, accessToken, refreshToken } = await authService.verifyEmail(
     payload
   );
@@ -58,7 +58,7 @@ export const verifyEmail: RequestHandler = async (req, res) => {
 };
 
 export const login: RequestHandler = async (req, res) => {
-  const payload: ILoginPayload = req.body;
+  const payload: LoginPayload = req.body;
   const { account, accessToken, refreshToken } = await authService.login(
     payload
   );
@@ -103,7 +103,7 @@ export const logout: RequestHandler = async (req, res) => {
 };
 
 export const forgetPassword: RequestHandler = async (req, res) => {
-  const payload: IForgetPasswordPayload = req.body;
+  const payload: ForgetPasswordPayload = req.body;
   await authService.forgetPassword(payload);
 
   sendResponse(res, {
@@ -113,7 +113,7 @@ export const forgetPassword: RequestHandler = async (req, res) => {
 };
 
 export const verifyResetCode: RequestHandler = async (req, res, next) => {
-  const payload: IVerifyPasswordResetCode = req.body;
+  const payload: VerifyPasswordResetCode = req.body;
   const result = await authService.verifyPasswordResetCode(payload);
 
   return sendResponse(res, {
@@ -124,7 +124,7 @@ export const verifyResetCode: RequestHandler = async (req, res, next) => {
 };
 
 export const resetPassword: RequestHandler = async (req, res) => {
-  const payload: IResetPasswordPayload = req.body;
+  const payload: ResetPasswordPayload = req.body;
   const { accessToken, refreshToken } = await authService.resetPassword(
     payload
   );
@@ -141,7 +141,7 @@ export const resetPassword: RequestHandler = async (req, res) => {
 export const googleCallbackHandler: RequestHandler = async (req, res, next) => {
   const { accessToken, refreshToken, account } =
     await authService.handleGoogleCallback(
-      req.account as IHandleGoogleCallbackPayload
+      req.account as HandleGoogleCallbackPayload
     );
 
   sendCookie(res, refreshToken);

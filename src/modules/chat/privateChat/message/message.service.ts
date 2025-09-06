@@ -2,7 +2,6 @@ import prisma from "../../../../config/prisma.config";
 import logger from "../../../../config/logger.config";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
 import APIError from "../../../../utils/APIError";
-import { IGetPrivateMessages, IPrivateMessage } from "./message.interface";
 import {
   ReactToPrivateMessage,
   SendPrivateMessagePayload,
@@ -10,6 +9,7 @@ import {
   DeleteForMePayload,
   DeleteForAllPayload,
   SearchMessagesPayload,
+  GetPrivateMessages,
 } from "./message.type";
 import { MatchType } from "../../../../enums/matchType.enum";
 
@@ -46,7 +46,7 @@ class PrivateMessage {
     }
   }
 
-  async getMessages(payload: IGetPrivateMessages) {
+  async getMessages(payload: GetPrivateMessages) {
     const { accountId, conversationId, cursor, since, limit = 50 } = payload;
 
     if (cursor) {

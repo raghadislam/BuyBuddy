@@ -8,7 +8,7 @@ import {
 import prisma from "../config/prisma.config";
 import { Status } from "../generated/prisma";
 import { accountSafeSelect } from "../modules/auth/auth.select";
-import { IAccount } from "../modules/auth/auth.interface";
+import { Account } from "../modules/auth/auth.type";
 
 const getTokenFromRequest = (req: Request): string | undefined => {
   if (
@@ -93,6 +93,6 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
   }
 
   // Attach the safe account object to the request so downstream handlers can use it
-  req.account = account as IAccount;
+  req.account = account as Account;
   next();
 };

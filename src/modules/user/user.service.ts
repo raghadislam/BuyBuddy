@@ -1,12 +1,12 @@
 import prisma from "../../config/prisma.config";
-import { IUpdateUserProfile } from "./user.interface";
+import { UpdateUserProfile } from "./user.type";
 import logger from "../../config/logger.config";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
 import { profileSelect } from "../auth/auth.select";
 
 class UserService {
-  async updateUserProfile(accountId: string, payload: IUpdateUserProfile) {
+  async updateUserProfile(accountId: string, payload: UpdateUserProfile) {
     const {
       government,
       city,

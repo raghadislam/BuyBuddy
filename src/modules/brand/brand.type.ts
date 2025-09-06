@@ -1,9 +1,9 @@
-import { IAccount } from "../auth/auth.interface";
+import { Account } from "../auth/auth.type";
 import { BrandStatus, Category, PaymentMethod } from "../../generated/prisma";
 
-export interface IBrand {
+export type Brand = {
   id: string;
-  account: IAccount;
+  account: Account;
   accountId: string;
   description?: string;
   logo?: string;
@@ -20,9 +20,9 @@ export interface IBrand {
   paymentMethod: PaymentMethod[];
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
-export interface IUpdateBrandProfile {
+export type UpdateBrandProfile = {
   description?: string;
   logo?: string;
   categories: Category[];
@@ -35,4 +35,4 @@ export interface IUpdateBrandProfile {
   crn?: string;
   taxId?: string;
   paymentMethods: PaymentMethod[];
-}
+};

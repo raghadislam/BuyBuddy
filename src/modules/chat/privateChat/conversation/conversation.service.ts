@@ -3,20 +3,20 @@ import logger from "../../../../config/logger.config";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
 import APIError from "../../../../utils/APIError";
 import {
-  IGetOrCreatePrivateConversationPayload,
-  IGetPrivateConversationPayload,
-  IGetAllPrivateConversationsPayload,
-  IPrivateConversation,
-  IArchivePrivateConversation,
-  IUnarchivePrivateConversation,
-} from "./conversation.interface";
+  GetOrCreatePrivateConversationPayload,
+  GetPrivateConversationPayload,
+  GetAllPrivateConversationsPayload,
+  PrivateConversation,
+  ArchivePrivateConversation,
+  UnarchivePrivateConversation,
+  MarkReadPayload,
+} from "./conversation.type";
 import { Role, Status } from "../../../../generated/prisma";
 import { chatParticipantSelect } from "../../../auth/auth.select";
-import { markReadPayload } from "./conversation.type";
 
 class PrivateConverstionService {
   private formatConversation(
-    conversation: IPrivateConversation,
+    conversation: PrivateConversation,
     accountId: string
   ) {
     const otherKey = "other";
@@ -37,7 +37,7 @@ class PrivateConverstionService {
   }
 
   private formatConversationsList(
-    conversations: IPrivateConversation[],
+    conversations: PrivateConversation[],
     accountId: string
   ) {
     return conversations.map((c) => this.formatConversation(c, accountId));
@@ -48,7 +48,7 @@ class PrivateConverstionService {
    * that the requesting account can see (no deleted messages), or create one if it doesn't exist.
    */
   async getOrCreateConversation(
-    payload: IGetOrCreatePrivateConversationPayload
+    payload: GetOrCreatePrivateConversationPayload
   ) {
     const { accountId, recipientId } = payload;
 
@@ -140,7 +140,7 @@ class PrivateConverstionService {
       });
       return {
         conversation: this.formatConversation(
-          existing as IPrivateConversation,
+          existing as PrivateConversation,
           accountId
         ),
         isNew: false,
@@ -199,14 +199,14 @@ class PrivateConverstionService {
     });
     return {
       conversation: this.formatConversation(
-        conversation as IPrivateConversation,
+        conversation as PrivateConversation,
         accountId
       ),
       isNew: true,
     };
   }
 
-  async getConversation(payload: IGetPrivateConversationPayload) {
+  async getConversation(payload: GetPrivateConversationPayload) {
     const { accountId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
@@ -271,12 +271,12 @@ class PrivateConverstionService {
       messagesCount: conversation.messages?.length ?? 0,
     });
     return this.formatConversation(
-      conversation as IPrivateConversation,
+      conversation as PrivateConversation,
       accountId
     );
   }
 
-  async getAllConversations(payload: IGetAllPrivateConversationsPayload) {
+  async getAllConversations(payload: GetAllPrivateConversationsPayload) {
     const { accountId } = payload;
     const conversations = await prisma.privateConversation.findMany({
       where: {
@@ -325,12 +325,12 @@ class PrivateConverstionService {
 
     logger.info(`Found private conversations for accountId: ${accountId}`);
     return this.formatConversationsList(
-      conversations as IPrivateConversation[],
+      conversations as PrivateConversation[],
       accountId
     );
   }
 
-  async archiveConversation(payload: IArchivePrivateConversation) {
+  async archiveConversation(payload: ArchivePrivateConversation) {
     const { accountId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
@@ -361,7 +361,7 @@ class PrivateConverstionService {
     });
   }
 
-  async unarchiveConversation(payload: IUnarchivePrivateConversation) {
+  async unarchiveConversation(payload: UnarchivePrivateConversation) {
     const { accountId, conversationId } = payload;
 
     const conversation = await prisma.privateConversation.findUnique({
@@ -392,7 +392,7 @@ class PrivateConverstionService {
     });
   }
 
-  async markRead(payload: markReadPayload) {
+  async markRead(payload: MarkReadPayload) {
     // get the participant and current unreadCount
     const { conversationId, accountId, upToMessageId } = payload;
     const participant = await prisma.privateConversationParticipant.findUnique({

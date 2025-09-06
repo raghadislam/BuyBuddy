@@ -3,19 +3,18 @@ import { TokenExpiredError } from "jsonwebtoken";
 
 import env from "../../config/env.config";
 import {
-  ISignupPayload,
-  IVerfiyEmail,
-  ILoginPayload,
-  IRefreshPayload,
-  ILogoutPayload,
-  IForgetPasswordPayload,
-  IResetPasswordPayload,
-  IHandleGoogleCallbackPayload,
-  IVerifyPasswordResetCode,
-  IRefreshTokenPayload,
-  IResetTokenPayload,
+  SignupPayload,
+  VerfiyEmail,
+  LoginPayload,
+  RefreshPayload,
+  LogoutPayload,
+  ForgetPasswordPayload,
+  ResetPasswordPayload,
+  HandleGoogleCallbackPayload,
+  VerifyPasswordResetCode,
+  ResetTokenPayload,
   ResendVerificationCode,
-} from "./auth.interface";
+} from "./auth.type";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status, RevokedReason, Provider, Role } from "../../generated/prisma";
@@ -26,7 +25,7 @@ import {
   sendPasswordResetConfirmation,
   sendAccountActivatedEmail,
 } from "../../services/email/send";
-import { hashPassword, comparePassword } from "../../utils/functions/hash";
+import { hashPassword, comparePassword } from "../../utils/hash";
 import logger from "../../config/logger.config";
 import {
   generateAccessToken,
@@ -90,7 +89,7 @@ class AuthService {
     });
   }
 
-  async signup(payload: ISignupPayload) {
+  async signup(payload: SignupPayload) {
     // Check if account already exists
     const existingaccount = await prisma.account.findUnique({
       where: { email: payload.email },
@@ -233,7 +232,7 @@ class AuthService {
     };
   }
 
-  async verifyEmail(payload: IVerfiyEmail) {
+  async verifyEmail(payload: VerfiyEmail) {
     const { email, code } = payload;
 
     // Find account by email with only fields needed for verification
@@ -334,7 +333,7 @@ class AuthService {
     return { account, accessToken, refreshToken, emailQueued: true };
   }
 
-  async login(payload: ILoginPayload) {
+  async login(payload: LoginPayload) {
     const { email, password } = payload;
 
     // Find account by email
@@ -403,7 +402,7 @@ class AuthService {
     return { account: safeaccount, accessToken, refreshToken };
   }
 
-  async refresh(payload: IRefreshPayload) {
+  async refresh(payload: RefreshPayload) {
     const { refreshToken } = payload;
     const decoded = await verifyRefreshToken(refreshToken);
 
@@ -528,7 +527,7 @@ class AuthService {
     };
   }
 
-  async logout(payload: ILogoutPayload) {
+  async logout(payload: LogoutPayload) {
     const { refreshToken } = payload;
     // Verify refresh token and extract payload.
     const decoded = verifyRefreshToken(refreshToken);
@@ -546,7 +545,7 @@ class AuthService {
     return;
   }
 
-  async forgetPassword(payload: IForgetPasswordPayload) {
+  async forgetPassword(payload: ForgetPasswordPayload) {
     const { email } = payload;
     const account = await prisma.account.findUnique({ where: { email } });
 
@@ -604,7 +603,7 @@ class AuthService {
     return;
   }
 
-  async verifyPasswordResetCode(payload: IVerifyPasswordResetCode) {
+  async verifyPasswordResetCode(payload: VerifyPasswordResetCode) {
     const { code, email } = payload;
 
     // Find account with password reset fields only
@@ -659,10 +658,10 @@ class AuthService {
     return { resetToken };
   }
 
-  async resetPassword(payload: IResetPasswordPayload) {
+  async resetPassword(payload: ResetPasswordPayload) {
     const { resetToken, newPassword } = payload;
 
-    let decoded: IResetTokenPayload;
+    let decoded: ResetTokenPayload;
 
     try {
       decoded = await verifyResetToken(resetToken);
@@ -804,7 +803,7 @@ class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async handleGoogleCallback(payload: IHandleGoogleCallbackPayload) {
+  async handleGoogleCallback(payload: HandleGoogleCallbackPayload) {
     const { email } = payload;
     const account = await prisma.account.findUnique({
       where: { email },

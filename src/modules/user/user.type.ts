@@ -1,9 +1,9 @@
-import { IAccount } from "../auth/auth.interface";
+import { Account } from "../auth/auth.type";
 import { Gender, PaymentMethod } from "../../generated/prisma";
 
-export interface IUser {
+export type User = {
   id: string;
-  account: IAccount;
+  account: Account;
   accountId: string;
   userName: string;
   photo?: string;
@@ -14,9 +14,9 @@ export interface IUser {
   birthDate?: Date;
   landmark?: string;
   paymentMethods: PaymentMethod[];
-}
+};
 
-export interface IUpdateUserProfile {
+export type UpdateUserProfile = {
   userName?: string;
   photo?: string;
   phone?: string;
@@ -27,4 +27,4 @@ export interface IUpdateUserProfile {
   secondaryAddress?: string;
   landmark?: string;
   paymentMethods: PaymentMethod[];
-}
+};

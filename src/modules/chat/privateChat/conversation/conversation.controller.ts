@@ -1,22 +1,22 @@
 import { RequestHandler } from "express";
 
 import {
-  IGetOrCreatePrivateConversationPayload,
-  IGetPrivateConversationPayload,
-  IGetAllPrivateConversationsPayload,
-  IArchivePrivateConversation,
-  IUnarchivePrivateConversation,
-} from "./conversation.interface";
+  GetOrCreatePrivateConversationPayload,
+  GetPrivateConversationPayload,
+  GetAllPrivateConversationsPayload,
+  ArchivePrivateConversation,
+  UnarchivePrivateConversation,
+  MarkReadPayload,
+} from "./conversation.type";
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
 import { HttpStatus } from "../../../../enums/httpStatus.enum";
-import { markReadPayload } from "./conversation.type";
 
 export const getOrCreatePrivateConversation: RequestHandler = async (
   req,
   res
 ) => {
-  const payload: IGetOrCreatePrivateConversationPayload = {
+  const payload: GetOrCreatePrivateConversationPayload = {
     recipientId: req.params.recipientId,
     accountId: req.account?.id!,
   };
@@ -35,7 +35,7 @@ export const getOrCreatePrivateConversation: RequestHandler = async (
 };
 
 export const getPrivateConversation: RequestHandler = async (req, res) => {
-  const payload: IGetPrivateConversationPayload = {
+  const payload: GetPrivateConversationPayload = {
     conversationId: req.params.conversationId,
     accountId: req.account?.id!,
   };
@@ -51,7 +51,7 @@ export const getPrivateConversation: RequestHandler = async (req, res) => {
 };
 
 export const getAllprivateConversations: RequestHandler = async (req, res) => {
-  const payload: IGetAllPrivateConversationsPayload = {
+  const payload: GetAllPrivateConversationsPayload = {
     accountId: req.account?.id!,
   };
   const conversations = await privateConverstionService.getAllConversations(
@@ -68,7 +68,7 @@ export const getAllprivateConversations: RequestHandler = async (req, res) => {
 };
 
 export const archivePrivateConversation: RequestHandler = async (req, res) => {
-  const payload: IArchivePrivateConversation = {
+  const payload: ArchivePrivateConversation = {
     accountId: req.account?.id!,
     conversationId: req.params.conversationId,
   };
@@ -85,7 +85,7 @@ export const unarchivePrivateConversation: RequestHandler = async (
   req,
   res
 ) => {
-  const payload: IUnarchivePrivateConversation = {
+  const payload: UnarchivePrivateConversation = {
     accountId: req.account?.id!,
     conversationId: req.params.conversationId,
   };
@@ -100,7 +100,7 @@ export const unarchivePrivateConversation: RequestHandler = async (
 
 export const markRead: RequestHandler = async (req, res, next) => {
   const accountId = (req as any).user?.id ?? (res.locals as any).accountId;
-  const payload: markReadPayload = {
+  const payload: MarkReadPayload = {
     accountId: req.account?.id!,
     conversationId: req.params.conversationId,
     upToMessageId: req.query.upToMessageId as string | undefined,

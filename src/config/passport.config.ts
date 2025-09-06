@@ -6,9 +6,9 @@ import prisma from "./prisma.config";
 import env from "./env.config";
 import { HttpStatus } from "../enums/httpStatus.enum";
 import APIError from "../utils/APIError";
-import { hashPassword } from "../utils/functions/hash";
+import { hashPassword } from "../utils/hash";
 import { Status, Provider } from "../generated/prisma";
-import { IAccount } from "../modules/auth/auth.interface";
+import { Account } from "../modules/auth/auth.type";
 import { accountSafeSelect } from "../modules/auth/auth.select";
 import { sendAccountActivatedEmail } from "../services/email/send";
 import logger from "./logger.config";
@@ -25,7 +25,7 @@ passport.use(
       accessToken: string,
       refreshToken: string,
       profile: Profile,
-      cb: (err: any, account?: IAccount | false) => void
+      cb: (err: any, account?: Account | false) => void
     ) => {
       try {
         // Prefer profile._json.email_verified, fallback to profile.emails
@@ -127,7 +127,7 @@ passport.use(
             select: accountSafeSelect,
           });
 
-          return cb(null, account as IAccount);
+          return cb(null, account as Account);
         }
 
         // No existing account -> create (use select to avoid returning password)
@@ -143,7 +143,7 @@ passport.use(
           select: accountSafeSelect,
         });
 
-        return cb(null, created as IAccount);
+        return cb(null, created as Account);
       } catch (err) {
         // Passport expects the error to be passed to the callback, not thrown.
         logger.error("GoogleStrategy error:", err);

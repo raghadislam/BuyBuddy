@@ -1,5 +1,11 @@
-import { ReactionType, ContentType } from "../../../../generated/prisma";
-import { SendMessageAttachment } from "../messageAttachment/messageAttachment.type";
+import { PrivateConversation } from "../conversation/conversation.type";
+import { Account } from "../../../auth/auth.type";
+import {
+  PrivateMessageAttachment,
+  SendMessageAttachment,
+} from "../messageAttachment/messageAttachment.type";
+import { ContentType, ReactionType } from "../../../../generated/prisma";
+import { PrivateMessageVisibility } from "../messageVisibility/messageVisibility.type";
 import { MatchType } from "../../../../enums/matchType.enum";
 
 export type ReactToPrivateMessage = {
@@ -42,4 +48,31 @@ export type SearchMessagesPayload = {
   caseSensitive?: boolean;
   limit?: number;
   cursor?: string;
+};
+
+export type PrivateMessage = {
+  id: string;
+  conversation: PrivateConversation;
+  conversationId: string;
+  sender: Account;
+  senderId: string;
+  content?: string;
+  contentType: ContentType;
+  createdAt: Date;
+  updatedAt: Date;
+  readAt?: Date;
+  deletedAt?: Date;
+  attachments: PrivateMessageAttachment[];
+  reactionType?: ReactionType;
+  reactedById?: string;
+  reactedBy?: Account;
+  visibilities: PrivateMessageVisibility[];
+};
+
+export type GetPrivateMessages = {
+  accountId: string;
+  conversationId: string;
+  limit?: number;
+  cursor?: string;
+  since?: Date;
 };
