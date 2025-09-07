@@ -60,7 +60,6 @@ export type PrivateMessage = {
   contentType: ContentType;
   createdAt: Date;
   updatedAt: Date;
-  readAt?: Date;
   deletedAt?: Date;
   attachments: PrivateMessageAttachment[];
   reactionType?: ReactionType;

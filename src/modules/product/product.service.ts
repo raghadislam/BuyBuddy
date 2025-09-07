@@ -1,102 +1,17 @@
 import slugify from "slugify";
 import prisma from "../../config/prisma.config";
-import { Prisma, ProductStatus } from "../../generated/prisma";
-import APIError from "../../utils/APIError";
-import { HttpStatus } from "../../enums/httpStatus.enum";
+import { Prisma } from "../../generated/prisma";
+import { normalizePage } from "../../utils/pagination";
+import { productCardSelect, productDetailSelect } from "./product.select";
 
 import {
   ProductServices,
   ListProductsQuery,
   CreateProduct,
   UpdateProduct,
-  PageOptions,
 } from "./product.interface";
 
-const MAX_LIMIT = 100;
-const normalizePage = ({ page = 1, limit = 20 }: PageOptions) => {
-  const p = Math.max(1, Math.min(page, 10_000));
-  const l = Math.max(1, Math.min(limit, MAX_LIMIT));
-  return { page: p, limit: l, skip: (p - 1) * l, take: l };
-};
-
-async function assertBrandOwnership(brandId: string, accountId: string) {
-  const brand = await prisma.brand.findUnique({
-    where: { id: brandId },
-    select: { accountId: true },
-  });
-
-  if (!brand || brand.accountId !== accountId)
-    throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
-}
-
-async function assertProductOwnership(productId: string, accountId: string) {
-  const prod = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { brand: { select: { accountId: true } } },
-  });
-  if (!prod || prod.brand.accountId !== accountId)
-    throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
-}
-
-const productCardSelect: Prisma.ProductSelect = {
-  id: true,
-  brandId: true,
-  category: true,
-  title: true,
-  slug: true,
-  material: true,
-  status: true,
-  createdAt: true,
-  images: {
-    select: { id: true, url: true, altText: true, sortOrder: true },
-    orderBy: { sortOrder: "asc" },
-  },
-  variants: {
-    select: { id: true, sku: true, price: true, currency: true, stock: true },
-    take: 8,
-  },
-};
-
-const productDetailSelect: Prisma.ProductSelect = {
-  id: true,
-  brandId: true,
-  category: true,
-  title: true,
-  slug: true,
-  description: true,
-  attributes: true,
-  material: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-  images: {
-    select: { id: true, url: true, altText: true, sortOrder: true },
-    orderBy: { sortOrder: "asc" },
-  },
-  variants: {
-    select: {
-      id: true,
-      sku: true,
-      price: true,
-      currency: true,
-      stock: true,
-      images: {
-        select: { id: true, url: true, altText: true, sortOrder: true },
-        orderBy: { sortOrder: "asc" },
-      },
-      options: true,
-    },
-  },
-  tags: {
-    select: {
-      tag: { select: { id: true, name: true, slug: true } },
-      pinned: true,
-      addedAt: true,
-    },
-  },
-};
-
-export const ProductService: ProductServices = {
+class ProductService implements ProductServices {
   async getAllProducts(query: ListProductsQuery) {
     const { page, limit, skip, take } = normalizePage(query);
     const where: Prisma.ProductWhereInput = {};
@@ -132,24 +47,23 @@ export const ProductService: ProductServices = {
     ]);
 
     return { items, page, limit, total };
-  },
+  }
 
   async getProductById(id: string) {
     return await prisma.product.findFirst({
       where: { id },
       select: productDetailSelect,
     });
-  },
+  }
 
   async getProductBySlug(slug: string) {
     return await prisma.product.findFirst({
       where: { slug },
       select: productDetailSelect,
     });
-  },
+  }
 
   async createProduct(payload: CreateProduct, actorAccountId: string) {
-    await assertBrandOwnership(payload.brandId, actorAccountId);
     const slug =
       payload.slug ?? slugify(payload.title, { lower: true, strict: true });
 
@@ -175,15 +89,13 @@ export const ProductService: ProductServices = {
       },
       select: productDetailSelect,
     });
-  },
+  }
 
   async updateProduct(
     productId: string,
     payload: UpdateProduct,
     actorAccountId: string
   ) {
-    await assertProductOwnership(productId, actorAccountId);
-
     const data: Prisma.ProductUpdateInput = {
       category: payload.category ?? undefined,
       title: payload.title ?? undefined,
@@ -214,10 +126,9 @@ export const ProductService: ProductServices = {
       data,
       select: productDetailSelect,
     });
-  },
+  }
 
   async deleteProductById(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     await prisma.$transaction(async (tx) => {
       await tx.productTag.deleteMany({ where: { productId } });
       await tx.productImage.deleteMany({ where: { productId } });
@@ -227,31 +138,31 @@ export const ProductService: ProductServices = {
       await tx.product.delete({ where: { id: productId } });
     });
     return { id: productId };
-  },
+  }
+
   async publish(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     return prisma.product.update({
       where: { id: productId },
       data: { status: "PUBLISHED" },
       select: { id: true, status: true },
     });
-  },
+  }
 
   async unpublish(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     return prisma.product.update({
       where: { id: productId },
       data: { status: "DRAFT" },
       select: { id: true, status: true },
     });
-  },
+  }
 
   async archive(productId: string, actorAccountId: string) {
-    await assertProductOwnership(productId, actorAccountId);
     return prisma.product.update({
       where: { id: productId },
       data: { status: "ARCHIVED" },
       select: { id: true, status: true },
     });
-  },
-};
+  }
+}
+
+export default new ProductService();

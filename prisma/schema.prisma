@@ -228,7 +228,6 @@ model PrivateMessage {
   contentType    ContentType
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
-  readAt         DateTime?
   deletedAt      DateTime?
   attachments    PrivateMessageAttachment[]
   reactionType   ReactionType?

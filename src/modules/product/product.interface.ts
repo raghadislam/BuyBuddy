@@ -1,29 +1,29 @@
-// import { promises } from "dns";
 import type { Prisma, Category, ProductStatus } from "../../generated/prisma";
-// import type { Prisma } from "@prisma/client";
 
-export interface PageOptions {
-  page?: number; // 1- pased
+export type PageOptions = Readonly<{
+  page?: number; // 1-based
   limit?: number; // default 20, max 100
-}
+}>;
 
-export interface ListProductsQuery extends PageOptions {
-  q?: string;
-  brandId?: string;
-  category?: Category;
-  status?: ProductStatus;
-  material?: string;
-  minPrice?: number;
-  maxPrice?: number;
-}
+export type ListProductsQuery = PageOptions &
+  Readonly<{
+    q?: string;
+    brandId?: string;
+    category?: Category;
+    status?: ProductStatus;
+    material?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }>;
 
+// Prefer `interface` for reusable object contracts
 export interface ImageInput {
   url: string;
   altText?: string | null;
   sortOrder?: number;
 }
 
-export interface CreateProduct {
+export type CreateProduct = Readonly<{
   brandId: string;
   category: Category;
   title: string;
@@ -33,18 +33,10 @@ export interface CreateProduct {
   status?: ProductStatus;
   material?: string | null;
   images?: ImageInput[];
-}
+}>;
 
-export interface UpdateProduct {
-  category?: Category;
-  title?: string;
-  slug?: string;
-  description?: string | null;
-  attributes?: Prisma.InputJsonValue | null;
-  status: ProductStatus;
-  material?: string | null;
-  images?: ImageInput[];
-}
+// Update is Create minus brandId, all optional
+export type UpdateProduct = Readonly<Partial<Omit<CreateProduct, "brandId">>>;
 
 export interface ProductServices {
   getAllProducts(
