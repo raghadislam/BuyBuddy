@@ -39,8 +39,9 @@ export function sendCookie(res: Response, token: string): Response {
   const cookieOptions: CookieOptions = {
     expires,
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    path: "/",
   };
 
   res.cookie("refreshToken", token, cookieOptions);
