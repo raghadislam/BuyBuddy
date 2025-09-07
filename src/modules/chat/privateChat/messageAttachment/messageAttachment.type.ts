@@ -12,5 +12,5 @@ export type PrivateMessageAttachment = {
 
 export type SendMessageAttachment = {
   url: string;
-  mimeType: string;
+  mimeType?: string;
 };
