@@ -27,10 +27,7 @@ import {
   archiveProduct,
 } from "./product.controller";
 
-import {
-  listTagsForProductCtrl,
-  attachTagToProductCtrl,
-} from "../tag/tag.controller";
+import { listTagsForProduct, attachTagToProduct } from "../tag/tag.controller";
 
 const router = Router();
 
@@ -83,18 +80,13 @@ router.post(
   archiveProduct
 );
 
-router.get(
-  "/:productId/tags",
-  authenticate,
-  assertProductOwnership,
-  listTagsForProductCtrl
-);
+router.get("/:productId/tags", listTagsForProduct);
 
 router.post(
   "/:productId/tags",
   authenticate,
   assertProductOwnership,
-  attachTagToProductCtrl
+  attachTagToProduct
 );
 
 export default router;
