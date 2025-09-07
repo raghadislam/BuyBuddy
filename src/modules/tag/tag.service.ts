@@ -6,6 +6,9 @@ import {
 } from "../product/product.select";
 import { Page, normalizePage } from "../../utils/pagination";
 import { TagService } from "./tag.interface";
+import logger from "../../config/logger.config";
+import { HttpStatus } from "../../enums/httpStatus.enum";
+import APIError from "../../utils/APIError";
 
 class tagService implements TagService {
   async #upsertTagByName(nameOrSlug: string) {
@@ -78,12 +81,15 @@ class tagService implements TagService {
   }
 
   async detachTagFromProduct(productId: string, tagSlug: string) {
+    let status = { removed: true };
     const tag = await prisma.tag.findUnique({ where: { slug: tagSlug } });
-    if (!tag) return { removed: false };
+    if (!tag) throw new APIError("Tag not fount", HttpStatus.NotFound);
     await prisma.productTag
       .delete({ where: { productId_tagId: { productId, tagId: tag.id } } })
-      .catch(() => null); // ignore if already absent
-    return { removed: true };
+      .catch(() => {
+        status = { removed: false };
+      });
+    return status;
   }
 
   async changeTagPinStatus(
@@ -92,7 +98,16 @@ class tagService implements TagService {
     pinned: boolean
   ) {
     const tag = await prisma.tag.findUnique({ where: { slug: tagSlug } });
-    if (!tag) throw new Error("TAG_NOT_FOUND");
+    if (!tag) throw new APIError("tag not found", HttpStatus.NotFound);
+
+    const link = await prisma.productTag.findUnique({
+      where: { productId_tagId: { productId, tagId: tag.id } },
+    });
+    if (!link)
+      throw new APIError(
+        "tag and product are not linked.",
+        HttpStatus.NotFound
+      );
 
     return prisma.productTag.update({
       where: { productId_tagId: { productId, tagId: tag.id } },

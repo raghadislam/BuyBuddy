@@ -68,13 +68,6 @@ export const productSlugParamSchema = z.object({
   params: z.object({ slug: z.string().regex(slugRegex) }),
 });
 
-export const productIdTagSlugParamsSchema = z.object({
-  params: z.object({
-    productId: z.string().uuid(),
-    tagSlug: z.string().min(1),
-  }),
-});
-
 /* ---------------- Tag Body Schemas ---------------- */
 export const attachTagBodySchema = z.object({
   body: z.object({
