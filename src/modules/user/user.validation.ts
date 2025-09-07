@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Gender } from "../../generated/prisma";
+import { Gender, PaymentMethod } from "../../generated/prisma";
 
 export const updateUserProfileZodSchema = z.object({
   body: z
@@ -18,6 +18,22 @@ export const updateUserProfileZodSchema = z.object({
         .optional(),
 
       gender: z.nativeEnum(Gender).optional(),
+
+      city: z.string().min(1, "City cannot be empty").optional(),
+
+      primaryAddress: z
+        .string()
+        .min(1, "Primary address cannot be empty")
+        .optional(),
+
+      secondaryAddress: z
+        .string()
+        .min(1, "Secondary address cannot be empty")
+        .optional(),
+
+      landmark: z.string().min(1, "Landmark cannot be empty").optional(),
+
+      paymentMethods: z.array(z.nativeEnum(PaymentMethod)).optional(),
     })
     .strict(),
 });

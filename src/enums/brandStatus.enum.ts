@@ -1,8 +1,0 @@
-export enum BrandStatus {
-  DRAFT = "DRAFT",
-  PENDING = "PENDING",
-  ACTIVE = "ACTIVE",
-  SUSPENDED = "SUSPENDED",
-  REJECTED = "REJECTED",
-  INACTIVE = "INACTIVE",
-}

@@ -1,6 +1,0 @@
-export enum Status {
-  UNVERIFIED = "UNVERIFIED",
-  ACTIVE = "ACTIVE",
-  SUSPENDED = "SUSPENDED",
-  INACTIVE = "INACTIVE",
-}

@@ -125,36 +125,55 @@ model Account {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  accountId String   @unique
-  account   Account  @relation(fields: [accountId], references: [id])
-  userName  String
-  photo     String?
-  phone     String?
-  gender    Gender?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String          @id @default(uuid())
+  accountId      String          @unique
+  account        Account         @relation(fields: [accountId], references: [id])
+  userName       String          @unique
+  photo          String?
+  phone          String?
+  gender         Gender?
+  birthDate      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  paymentMethods PaymentMethod[]
+  addresses      Address[]
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  government  String?
+  city        String?
+  addressLine String?
+  landmark    String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Brand {
-  id              String         @id @default(uuid())
-  accountId       String         @unique
-  account         Account        @relation(fields: [accountId], references: [id])
+  id              String          @id @default(uuid())
+  accountId       String          @unique
+  account         Account         @relation(fields: [accountId], references: [id])
   description     String?
   logo            String?
-  category        Category?
-  status          BrandStatus    @default(DRAFT)
+  categories      Category[]
+  status          BrandStatus     @default(DRAFT)
   instagramUrl    String?
   tiktokUrl       String?
+  bussinessPhone  String?
   ownerName       String?
   ownerNationalId String?
   ownerPhone      String?
   crn             String?
   taxId           String?
-  paymentMethod   PaymentMethod?
+  paymentMethods  PaymentMethod[]
   Products        Product[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([status])
 }
@@ -209,7 +228,6 @@ model PrivateMessage {
   contentType    ContentType
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
-  readAt         DateTime?
   deletedAt      DateTime?
   attachments    PrivateMessageAttachment[]
   reactionType   ReactionType?

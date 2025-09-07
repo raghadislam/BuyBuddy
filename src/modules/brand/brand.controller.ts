@@ -1,12 +1,12 @@
 import { RequestHandler } from "express";
 
-import { IUpdateBrandProfile } from "./brand.interface";
+import { UpdateBrandProfile } from "./brand.type";
 import brandService from "./brand.service";
 import { sendResponse, sendCookie } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 
 export const updateBrandProfile: RequestHandler = async (req, res) => {
-  const payload: IUpdateBrandProfile = req.body;
+  const payload: UpdateBrandProfile = req.body;
   const brand = await brandService.updateBrandProfile(
     req.account?.id!,
     payload
