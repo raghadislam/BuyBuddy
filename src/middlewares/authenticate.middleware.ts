@@ -85,13 +85,6 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
     );
   }
 
-  if (account.status === Status.UNVERIFIED) {
-    throw new APIError(
-      "Email not verified. Please verify your email address before continuing.",
-      403
-    );
-  }
-
   // Attach the safe account object to the request so downstream handlers can use it
   req.account = account as Account;
   next();
