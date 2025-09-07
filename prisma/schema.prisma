@@ -280,11 +280,12 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  brand    Brand           @relation(fields: [brandId], references: [id])
-  images   ProductImage[]
-  variants Variant[]
-  options  ProductOption[]
-  tags     ProductTag[]
+  brand        Brand                   @relation(fields: [brandId], references: [id])
+  images       ProductImage[]
+  variants     Variant[]
+  options      ProductOption[]
+  tags         ProductTag[]
+  imageVectors ProductImageEmbedding[]
 
   @@unique([brandId, slug])
   @@index([category, status, createdAt(sort: Desc)])
@@ -300,7 +301,8 @@ model ProductImage {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  product Product @relation(fields: [productId], references: [id])
+  product   Product                @relation(fields: [productId], references: [id])
+  embedding ProductImageEmbedding?
 
   @@unique([productId, sortOrder])
   @@index([productId])
@@ -409,4 +411,20 @@ model ProductTag {
 
   @@id([productId, tagId])
   @@index([tagId, productId])
+}
+
+model ProductImageEmbedding {
+  id             String                @id @default(uuid())
+  productImageId String                @unique
+  productId      String // denorm for filtering
+  model          String
+  dim            Int
+  vector         Unsupported("vector")
+  updatedAt      DateTime              @updatedAt
+
+  image   ProductImage @relation(fields: [productImageId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // @@index([model, dim])
+
+  @@index([productId])
 }
