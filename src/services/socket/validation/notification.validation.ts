@@ -30,3 +30,11 @@ export const markReadSchema = z
       .uuid({ message: "notificationId is required and must be a valid UUID" }),
   })
   .strict();
+
+export const deleteForMeSchema = z
+  .object({
+    notificationId: z
+      .string()
+      .uuid({ message: "notificationId is required and must be a valid UUID" }),
+  })
+  .strict();

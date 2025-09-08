@@ -57,3 +57,5 @@ export const markReadZodSchema = z.object({
     })
     .strict(),
 });
+
+export const deleteForMeZodSchema = markReadZodSchema;

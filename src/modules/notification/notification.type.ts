@@ -46,3 +46,8 @@ export type MarkNotificationReadPayload = {
   accountId: string;
   notificationId: string;
 };
+
+export type DeleteNotificationForMePayload = {
+  accountId: string;
+  notificationId: string;
+};

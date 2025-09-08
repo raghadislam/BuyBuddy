@@ -6,6 +6,7 @@ import {
   SendNotificationPayload,
   GetNotificationsPayload,
   MarkNotificationReadPayload,
+  DeleteNotificationForMePayload,
 } from "./notification.type";
 
 export const sendNotification: RequestHandler = async (req, res) => {
@@ -58,6 +59,20 @@ export const markNotificationRead: RequestHandler = async (req, res) => {
   return sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Notification marked read successfully.",
+    data: result,
+  });
+};
+
+export const deleteNotificationForMe: RequestHandler = async (req, res) => {
+  const payload: DeleteNotificationForMePayload = {
+    accountId: req.account?.id!,
+    notificationId: req.params.notificationId,
+  };
+
+  const result = await notificationService.deleteNotificationForMe(payload);
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Notification deleted for your view.",
     data: result,
   });
 };

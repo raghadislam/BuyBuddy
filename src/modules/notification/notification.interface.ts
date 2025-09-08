@@ -3,6 +3,7 @@ import {
   SendNotificationPayload,
   GetNotificationsPayload,
   MarkNotificationReadPayload,
+  DeleteNotificationForMePayload,
 } from "./notification.type";
 
 import {
@@ -31,4 +32,8 @@ export interface INotificationService {
   markNotificationRead(
     payload: MarkNotificationReadPayload
   ): Promise<{ marked: number; unreadCount: number }>;
+
+  deleteNotificationForMe(
+    payload: DeleteNotificationForMePayload
+  ): Promise<{ deleted: boolean; unreadCount: number }>;
 }

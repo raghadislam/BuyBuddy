@@ -9,6 +9,7 @@ import { accountRoomName } from "../../services/socket/utils/joinRooms.util";
 import {
   sendSchema,
   markReadSchema,
+  deleteForMeSchema,
 } from "../../services/socket/validation/notification.validation";
 import {
   SendNotificationPayload,
@@ -91,6 +92,36 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
       ack?.({
         status: "error",
         message: err?.message ?? "Failed to mark read",
+      });
+    }
+  });
+
+  socket.on(EVENTS.NOTIFICATION_DELETE_FOR_ME, async (rawPayload, ack) => {
+    try {
+      let data;
+      try {
+        data = validate(deleteForMeSchema, rawPayload);
+      } catch (err) {
+        const error = fromError(err);
+        return ack?.({ status: "error", message: error.message });
+      }
+
+      const result = await notificationService.deleteNotificationForMe({
+        accountId,
+        notificationId: data.notificationId,
+      });
+
+      socket.emit(EVENTS.NOTIFICATION_DELETED_FOR_ME, {
+        data,
+        result,
+      });
+
+      ack?.({ status: "ok", data: result });
+    } catch (err: any) {
+      logger.error("notification:delete failed", { err, accountId });
+      ack?.({
+        status: "error",
+        message: err?.message ?? "Failed to delete notification",
       });
     }
   });

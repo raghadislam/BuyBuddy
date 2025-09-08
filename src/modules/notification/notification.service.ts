@@ -6,6 +6,7 @@ import {
   SendNotificationPayload,
   GetNotificationsPayload,
   MarkNotificationReadPayload,
+  DeleteNotificationForMePayload,
 } from "./notification.type";
 import {
   sendNotificationSelect,
@@ -176,6 +177,38 @@ class NotificationService implements INotificationService {
         `Account ${accountId} marked notification ${notificationId} read`
       );
       return { marked: 1, unreadCount };
+    });
+  }
+
+  async deleteNotificationForMe(payload: DeleteNotificationForMePayload) {
+    const { accountId, notificationId } = payload;
+
+    const existing = await prisma.notificationRecipient.findUnique({
+      where: { notificationId_accountId: { notificationId, accountId } },
+      select: { id: true, deletedAt: true, readAt: true },
+    });
+
+    if (!existing || existing.deletedAt) {
+      throw new APIError(
+        "Notification not found for this account",
+        HttpStatus.BadRequest
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.notificationRecipient.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date(), readAt: existing.readAt ?? new Date() },
+      });
+
+      const unreadCount = await tx.notificationRecipient.count({
+        where: { accountId, readAt: null, deletedAt: null },
+      });
+
+      logger.info(
+        `Account ${accountId} deleted notification ${notificationId} for themself`
+      );
+      return { deleted: true, unreadCount };
     });
   }
 }
