@@ -15,4 +15,7 @@ export const EVENTS = {
   MESSAGE_DELETE_FOR_ME: "message:deleteForMe",
   MESSAGE_DELETED_FOR_ME: "message:deletedForMe",
   MESSAGE_SEARCH: "message:search",
+  // notifications
+  NOTIFICATION_SEND: "notification:send",
+  NOTIFICATION_SENT: "notification:sent",
 } as const;

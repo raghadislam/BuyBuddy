@@ -27,7 +27,7 @@ import {
 } from "../../../../services/socket/validation/message.validation";
 import { validate } from "../../../../services/socket/utils/validate.util";
 
-export default function messageHandler(io: Server, socket: CustomSocket) {
+export default function messageGateway(io: Server, socket: CustomSocket) {
   const accountId = socket.data.accountId;
   if (!accountId) {
     logger.error("messageHandler: missing accountId", { socketId: socket.id });

@@ -17,7 +17,7 @@ import {
 } from "../../../../services/socket/validation/conversation.validation";
 import { validate } from "../../../../services/socket/utils/validate.util";
 
-export default async function conversationHandler(
+export default async function conversationGateway(
   io: Server,
   socket: CustomSocket
 ) {
