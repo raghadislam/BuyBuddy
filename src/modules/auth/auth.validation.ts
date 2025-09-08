@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Role } from "../../enums/role.enum";
+import { Role } from "../../generated/prisma";
 
 export const signupZodSchema = z.object({
   body: z
@@ -21,6 +21,14 @@ export const signupZodSchema = z.object({
         .min(3, "Username should be at least 3 characters")
         .max(15, "Username cannot be more than 15 characters")
         .optional(),
+    })
+    .strict(),
+});
+
+export const resendVerificationZodSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email({ message: "Invalid email address" }),
     })
     .strict(),
 });

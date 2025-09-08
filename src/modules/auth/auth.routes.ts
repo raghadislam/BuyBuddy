@@ -10,6 +10,7 @@ import {
   verifyResetCode,
   resetPassword,
   googleCallbackHandler,
+  resendVerification,
 } from "./auth.controller";
 import { validate } from "../../middlewares/validation.middleware";
 import { authenticate } from "../../middlewares/authenticate.middleware";
@@ -20,12 +21,19 @@ import {
   forgetPasswordZodSchema,
   resetPasswordZodSchema,
   verifyResetCodeZodSchema,
+  resendVerificationZodSchema,
 } from "./auth.validation";
 import passport from "../../config/passport.config";
 
 const router = express.Router();
 
 router.post("/signup", validate(signupZodSchema), signup);
+
+router.post(
+  "/resend-verification",
+  validate(resendVerificationZodSchema),
+  resendVerification
+);
 
 router.post("/verify-email", validate(verifyEmailZodSchema), verifyEmail);
 

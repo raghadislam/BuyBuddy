@@ -29,3 +29,13 @@ export const profileSelect = {
   user: false,
   brand: false,
 };
+
+export const chatParticipantSelect = {
+  select: {
+    id: true,
+    name: true,
+    email: true,
+    brand: { select: { logo: true } },
+    user: { select: { photo: true } },
+  },
+};

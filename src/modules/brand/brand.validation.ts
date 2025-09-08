@@ -8,11 +8,13 @@ export const updateBrandProfileZodSchema = z.object({
 
       logo: z.string().url("Logo must be a valid URL").optional(),
 
-      category: z
-        .nativeEnum(Category)
-        .refine((val) => Object.values(Category).includes(val), {
-          message: "Invalid category",
-        })
+      categories: z
+        .array(z.nativeEnum(Category))
+        .nonempty("At least one category is required")
+        .refine(
+          (vals) => vals.every((val) => Object.values(Category).includes(val)),
+          { message: "Invalid category" }
+        )
         .optional(),
 
       instagramUrl: z.string().url("Instagram URL must be valid").optional(),
@@ -33,8 +35,12 @@ export const updateBrandProfileZodSchema = z.object({
 
       ownerPhone: z
         .string()
-        .min(6, "Phone number must be at least 6 digits")
-        .max(20, "Phone number cannot exceed 20 digits")
+        .regex(/^\+?\d{7,15}$/, "Phone must be a valid international number")
+        .optional(),
+
+      businessPhone: z
+        .string()
+        .regex(/^\+?\d{7,15}$/, "Phone must be a valid international number")
         .optional(),
 
       crn: z
@@ -49,11 +55,14 @@ export const updateBrandProfileZodSchema = z.object({
         .max(30, "Tax ID cannot exceed 30 characters")
         .optional(),
 
-      paymentMethod: z
-        .nativeEnum(PaymentMethod)
-        .refine((val) => Object.values(PaymentMethod).includes(val), {
-          message: "Invalid payment method",
-        })
+      paymentMethods: z
+        .array(z.nativeEnum(PaymentMethod))
+        .nonempty("At least one payment method is required")
+        .refine(
+          (vals) =>
+            vals.every((val) => Object.values(PaymentMethod).includes(val)),
+          { message: "Invalid payment method" }
+        )
         .optional(),
     })
     .strict(),

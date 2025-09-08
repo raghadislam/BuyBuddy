@@ -6,9 +6,9 @@ import {
   verifyRefreshToken,
 } from "../modules/auth/token.service";
 import prisma from "../config/prisma.config";
-import { Status } from "../enums/status.enum";
+import { Status } from "../generated/prisma";
 import { accountSafeSelect } from "../modules/auth/auth.select";
-import { IAccount } from "../modules/auth/auth.interface";
+import { Account } from "../modules/auth/auth.type";
 
 const getTokenFromRequest = (req: Request): string | undefined => {
   if (
@@ -85,14 +85,7 @@ export const authenticate: RequestHandler = async (req: Request, res, next) => {
     );
   }
 
-  if (account.status === Status.UNVERIFIED) {
-    throw new APIError(
-      "Email not verified. Please verify your email address before continuing.",
-      403
-    );
-  }
-
   // Attach the safe account object to the request so downstream handlers can use it
-  req.account = account as IAccount;
+  req.account = account as Account;
   next();
 };

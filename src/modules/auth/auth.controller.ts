@@ -1,21 +1,22 @@
 import { RequestHandler } from "express";
 
 import {
-  ISignupPayload,
-  IVerfiyEmail,
-  ILoginPayload,
-  IForgetPasswordPayload,
-  IResetPasswordPayload,
-  IHandleGoogleCallbackPayload,
-  IVerifyPasswordResetCode,
-} from "./auth.interface";
-import AuthService from "./auth.service";
+  SignupPayload,
+  VerfiyEmail,
+  LoginPayload,
+  ForgetPasswordPayload,
+  ResetPasswordPayload,
+  HandleGoogleCallbackPayload,
+  VerifyPasswordResetCode,
+  ResendVerificationCode,
+} from "./auth.type";
+import authService from "./auth.service";
 import { sendResponse, sendCookie } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 
 export const signup: RequestHandler = async (req, res) => {
-  const payload: ISignupPayload = req.body;
-  const account = await AuthService.signup(payload);
+  const payload: SignupPayload = req.body;
+  const account = await authService.signup(payload);
 
   sendResponse(res, {
     statusCode: HttpStatus.Created,
@@ -26,9 +27,22 @@ export const signup: RequestHandler = async (req, res) => {
   });
 };
 
+export const resendVerification: RequestHandler = async (req, res, next) => {
+  const payload: ResendVerificationCode = { email: req.body.email };
+  const account = await authService.resendVerificationCode(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.Created,
+    message: "Verification code resent successfully",
+    data: {
+      account,
+    },
+  });
+};
+
 export const verifyEmail: RequestHandler = async (req, res) => {
-  const payload: IVerfiyEmail = req.body;
-  const { account, accessToken, refreshToken } = await AuthService.verifyEmail(
+  const payload: VerfiyEmail = req.body;
+  const { account, accessToken, refreshToken } = await authService.verifyEmail(
     payload
   );
 
@@ -44,8 +58,8 @@ export const verifyEmail: RequestHandler = async (req, res) => {
 };
 
 export const login: RequestHandler = async (req, res) => {
-  const payload: ILoginPayload = req.body;
-  const { account, accessToken, refreshToken } = await AuthService.login(
+  const payload: LoginPayload = req.body;
+  const { account, accessToken, refreshToken } = await authService.login(
     payload
   );
 
@@ -62,7 +76,7 @@ export const login: RequestHandler = async (req, res) => {
 
 export const refresh: RequestHandler = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  const { account, accessToken, newRefreshToken } = await AuthService.refresh({
+  const { account, accessToken, newRefreshToken } = await authService.refresh({
     refreshToken,
   });
 
@@ -79,7 +93,7 @@ export const refresh: RequestHandler = async (req, res) => {
 
 export const logout: RequestHandler = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  await AuthService.logout({ refreshToken });
+  await authService.logout({ refreshToken });
 
   res.clearCookie("refreshToken");
   sendResponse(res, {
@@ -89,8 +103,8 @@ export const logout: RequestHandler = async (req, res) => {
 };
 
 export const forgetPassword: RequestHandler = async (req, res) => {
-  const payload: IForgetPasswordPayload = req.body;
-  await AuthService.forgetPassword(payload);
+  const payload: ForgetPasswordPayload = req.body;
+  await authService.forgetPassword(payload);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -99,8 +113,8 @@ export const forgetPassword: RequestHandler = async (req, res) => {
 };
 
 export const verifyResetCode: RequestHandler = async (req, res, next) => {
-  const payload: IVerifyPasswordResetCode = req.body;
-  const result = await AuthService.verifyPasswordResetCode(payload);
+  const payload: VerifyPasswordResetCode = req.body;
+  const result = await authService.verifyPasswordResetCode(payload);
 
   return sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -110,8 +124,8 @@ export const verifyResetCode: RequestHandler = async (req, res, next) => {
 };
 
 export const resetPassword: RequestHandler = async (req, res) => {
-  const payload: IResetPasswordPayload = req.body;
-  const { accessToken, refreshToken } = await AuthService.resetPassword(
+  const payload: ResetPasswordPayload = req.body;
+  const { accessToken, refreshToken } = await authService.resetPassword(
     payload
   );
 
@@ -126,8 +140,8 @@ export const resetPassword: RequestHandler = async (req, res) => {
 
 export const googleCallbackHandler: RequestHandler = async (req, res, next) => {
   const { accessToken, refreshToken, account } =
-    await AuthService.handleGoogleCallback(
-      req.account as IHandleGoogleCallbackPayload
+    await authService.handleGoogleCallback(
+      req.account as HandleGoogleCallbackPayload
     );
 
   sendCookie(res, refreshToken);
