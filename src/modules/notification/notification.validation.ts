@@ -14,11 +14,9 @@ export const notificationPayload = z.object({
 
   data: z.any().optional(),
 
-  recipientIds: z
-    .array(
-      z.string().uuid({ message: "each recipientId must be a valid UUID" })
-    )
-    .optional(),
+  recipientIds: z.array(
+    z.string().uuid({ message: "each recipientId must be a valid UUID" })
+  ),
 });
 
 export const sendNotificationZodSchema = z.object({

@@ -46,7 +46,7 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
 
       const result = await notificationService.sendNotification(payload);
 
-      // emit to recipients if present in this node
+      // emit to recipients if present
       if (data.recipientIds && data.recipientIds.length > 0) {
         data.recipientIds.forEach((rid: string) => {
           io.to(accountRoomName(rid)).emit(EVENTS.NOTIFICATION_SENT, result);

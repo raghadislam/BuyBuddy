@@ -12,30 +12,67 @@ import {
   getNotificationsSelect,
 } from "./notification.select";
 import { INotificationService } from "./notification.interface";
+import { Status } from "../../generated/prisma";
 
 class NotificationService implements INotificationService {
-  /**
-   * Create a notification and recipients. If recipientIds is undefined -> create recipients for ALL active accounts.
-   */
   async sendNotification(payload: SendNotificationPayload) {
     const { actorId, type, title, body, data, recipientIds } = payload;
 
     return prisma.$transaction(async (tx) => {
-      // Build recipients
-      let recipientsToCreate: { accountId: string }[] = [];
+      // normalize and dedupe recipientIds early
+      const uniqueRecipientIds =
+        recipientIds && recipientIds.length > 0
+          ? Array.from(new Set(recipientIds))
+          : [];
 
-      if (recipientIds && recipientIds.length > 0) {
-        // dedupe
-        const unique = Array.from(new Set(recipientIds));
-        recipientsToCreate = unique.map((accountId) => ({ accountId }));
-      } else {
-        // Broadcast: fetch all active accounts (careful on very large dbs)
-        const accounts = await tx.account.findMany({
-          where: { status: "ACTIVE" },
-          select: { id: true },
-        });
-        recipientsToCreate = accounts.map((a) => ({ accountId: a.id }));
+      // If actor provided and recipientIds explicitly includes them => error
+      if (
+        actorId &&
+        uniqueRecipientIds.length > 0 &&
+        uniqueRecipientIds.includes(actorId)
+      ) {
+        throw new APIError(
+          "Cannot send a notification to yourself.",
+          HttpStatus.BadRequest
+        );
       }
+
+      // If no recipients after dedupe -> error
+      if (uniqueRecipientIds.length === 0) {
+        throw new APIError(
+          "No recipients available for this notification.",
+          HttpStatus.BadRequest
+        );
+      }
+
+      // Verify recipients exist in DB and are active.
+      const existingAccounts = await tx.account.findMany({
+        where: {
+          id: { in: uniqueRecipientIds },
+          status: Status.ACTIVE,
+        },
+        select: { id: true },
+      });
+
+      const existingIds = new Set(existingAccounts.map((a) => a.id));
+      const invalidIds = uniqueRecipientIds.filter(
+        (id) => !existingIds.has(id)
+      );
+
+      if (invalidIds.length > 0) {
+        // return a clear error listing which ids are invalid/missing/inactive
+        throw new APIError(
+          `The following recipient ids are invalid or not active: ${invalidIds.join(
+            ", "
+          )}`,
+          HttpStatus.BadRequest
+        );
+      }
+
+      // Build recipients create payload (all ids are validated)
+      const recipientsToCreate = uniqueRecipientIds.map((accountId) => ({
+        accountId,
+      }));
 
       const notification = await tx.notification.create({
         data: {

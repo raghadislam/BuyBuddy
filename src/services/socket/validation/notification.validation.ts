@@ -17,11 +17,9 @@ export const sendSchema = z
 
     data: z.any().optional(),
 
-    recipientIds: z
-      .array(
-        z.string().uuid({ message: "each recipientId must be a valid UUID" })
-      )
-      .optional(),
+    recipientIds: z.array(
+      z.string().uuid({ message: "each recipientId must be a valid UUID" })
+    ),
   })
   .strict();
 
