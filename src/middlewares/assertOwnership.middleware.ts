@@ -40,3 +40,38 @@ export const assertProductOwnership: RequestHandler = async (
     throw new APIError("Unauthorized Access.", HttpStatus.Unauthorized);
   next();
 };
+
+export const assertReviewOwnership: RequestHandler = async (
+  req: Request,
+  res,
+  next
+) => {
+  const { reviewId } = req.params;
+  const account = (req as any).account;
+  console.log(account);
+
+  if (!account)
+    return res
+      .status(HttpStatus.Unauthorized)
+      .json({ message: "You Have to login to do this action." });
+
+  if (account.role === "ADMIN") {
+    return next();
+  }
+
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: { userId: true },
+  });
+  if (!review)
+    return res
+      .status(HttpStatus.NotFound)
+      .json({ message: "Review not found" });
+
+  if (review.userId !== account.id) {
+    return res
+      .status(HttpStatus.Forbidden)
+      .json({ message: "Forbidden! You are not the reviewer account." });
+  }
+  next();
+};
