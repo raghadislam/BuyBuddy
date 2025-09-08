@@ -457,17 +457,18 @@ model ProductImageEmbedding {
 }
 
 model Review {
-  id         String           @id @default(uuid())
-  productId  String
-  userId     String
-  rating     Float
-  title      String
-  content    String
-  isVerified Boolean          @default(false)
-  visibility ReviewVisibility @default(PUBLISHED)
-  reported   Boolean          @default(false)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  id           String           @id @default(uuid())
+  productId    String
+  userId       String
+  rating       Float
+  title        String
+  content      String
+  isVerified   Boolean          @default(false)
+  visibility   ReviewVisibility @default(PUBLISHED)
+  reported     Boolean          @default(false)
+  helpfulCount Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   images  ReviewImage[]
   votes   ReviewVote[]
@@ -514,7 +515,7 @@ model ReviewReport {
   reviewId  String
   userId    String
   reason    ReportReason
-  details   String
+  details   String?
   createdAt DateTime     @default(now())
 
   review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
