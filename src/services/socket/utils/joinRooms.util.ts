@@ -5,8 +5,8 @@ export function conversationRoomName(conversationId: string) {
   return `conversation:${conversationId}`;
 }
 
-export function accountRoomName(conversationId: string) {
-  return `conversation:${conversationId}`;
+export function accountRoomName(accountId: string) {
+  return `account:${accountId}`;
 }
 
 export async function joinRoomsOnConnect(
@@ -21,6 +21,8 @@ export async function joinRoomsOnConnect(
   participants.forEach((p) =>
     socket.join(conversationRoomName(p.conversationId))
   );
+
+  socket.join(accountRoomName(accountId));
 }
 
 export async function joinConversationRoom(
