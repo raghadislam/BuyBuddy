@@ -40,7 +40,11 @@ import {
   getProductsByTagSlug,
 } from "../tag/tag.controller";
 
+import reviewRouter from "../review/review.routes";
+
 const router = Router();
+
+router.use("/:productId/reviews", reviewRouter);
 
 router.get("/tags", validate(tagsBrowseQuerySchema), getAllTags);
 router.get("/tags/:tagSlug/products", getProductsByTagSlug);
