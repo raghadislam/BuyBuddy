@@ -4,6 +4,7 @@ import {
   getNotifications,
   markNotificationRead,
   deleteNotificationForMe,
+  searchNotifications,
 } from "./notification.controller";
 import { authenticate } from "../../middlewares/authenticate.middleware";
 import { validate } from "../../middlewares/validation.middleware";
@@ -12,6 +13,7 @@ import {
   getNotificationsZodSchema,
   markReadZodSchema,
   deleteForMeZodSchema,
+  searchNotificationsZodSchema,
 } from "./notification.validation";
 
 const router = express.Router();
@@ -33,6 +35,13 @@ router.post(
   authenticate,
   validate(deleteForMeZodSchema),
   deleteNotificationForMe
+);
+
+router.get(
+  "/search",
+  authenticate,
+  validate(searchNotificationsZodSchema),
+  searchNotifications
 );
 
 export default router;

@@ -7,6 +7,7 @@ import {
   GetNotificationsPayload,
   MarkNotificationReadPayload,
   DeleteNotificationForMePayload,
+  SearchNotificationsPayload,
 } from "./notification.type";
 
 export const sendNotification: RequestHandler = async (req, res) => {
@@ -73,6 +74,27 @@ export const deleteNotificationForMe: RequestHandler = async (req, res) => {
   return sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Notification deleted for your view.",
+    data: result,
+  });
+};
+
+export const searchNotifications: RequestHandler = async (req, res) => {
+  const accountId = req.account?.id!;
+  const { query } = req.body;
+  const { cursor, limit } = req.query;
+
+  const payload: SearchNotificationsPayload = {
+    accountId,
+    query,
+    cursor: cursor ? String(cursor) : undefined,
+    limit: limit ? Number(limit) : undefined,
+  };
+
+  const result = await notificationService.searchNotificationsByString(payload);
+
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Notifications search results.",
     data: result,
   });
 };

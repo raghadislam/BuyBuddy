@@ -22,4 +22,5 @@ export const EVENTS = {
   NOTIFICATION_READ: "notification:read",
   NOTIFICATION_DELETE_FOR_ME: "notification:deleteForMe",
   NOTIFICATION_DELETED_FOR_ME: "notification:deletedForMe",
+  NOTIFICATION_SEARCH: "notification:search",
 } as const;

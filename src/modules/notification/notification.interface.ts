@@ -1,23 +1,13 @@
-import { Prisma } from "../../generated/prisma";
 import {
   SendNotificationPayload,
   GetNotificationsPayload,
   MarkNotificationReadPayload,
   DeleteNotificationForMePayload,
+  SearchNotificationsPayload,
+  SearchNotificationsResult,
+  GetNotificationResult,
+  SendNotificationResult,
 } from "./notification.type";
-
-import {
-  sendNotificationSelect,
-  getNotificationsSelect,
-} from "./notification.select";
-
-type SendNotificationResult = Prisma.NotificationGetPayload<{
-  select: typeof sendNotificationSelect;
-}>;
-
-type GetNotificationResult = Prisma.NotificationRecipientGetPayload<{
-  select: typeof getNotificationsSelect;
-}>;
 
 export interface INotificationService {
   getNotifications(
@@ -36,4 +26,8 @@ export interface INotificationService {
   deleteNotificationForMe(
     payload: DeleteNotificationForMePayload
   ): Promise<{ deleted: boolean; unreadCount: number }>;
+
+  searchNotificationsByString(
+    payload: SearchNotificationsPayload
+  ): Promise<SearchNotificationsResult>;
 }

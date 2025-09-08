@@ -10,10 +10,12 @@ import {
   sendSchema,
   markReadSchema,
   deleteForMeSchema,
+  searchSchema,
 } from "../../services/socket/validation/notification.validation";
 import {
   SendNotificationPayload,
   MarkNotificationReadPayload,
+  SearchNotificationsPayload,
 } from "./notification.type";
 
 export default function notificationGateway(io: Server, socket: CustomSocket) {
@@ -122,6 +124,36 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
       ack?.({
         status: "error",
         message: err?.message ?? "Failed to delete notification",
+      });
+    }
+  });
+
+  socket.on(EVENTS.NOTIFICATION_SEARCH, async (rawPayload, ack) => {
+    try {
+      let data;
+      try {
+        data = validate(searchSchema, rawPayload);
+      } catch (err) {
+        const error = fromError(err);
+        return ack?.({ status: "error", message: error.message });
+      }
+
+      const payload: SearchNotificationsPayload = {
+        accountId,
+        query: data.query,
+        limit: data.limit ? Number(data.limit) : 50,
+        cursor: data.cursor ? String(data.cursor) : undefined,
+      };
+
+      const result = await notificationService.searchNotificationsByString(
+        payload
+      );
+
+      ack?.({ status: "ok", data: result });
+    } catch (err: any) {
+      ack?.({
+        status: "error",
+        message: err?.message ?? "Failed to search notifications",
       });
     }
   });

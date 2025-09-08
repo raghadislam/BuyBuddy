@@ -1,5 +1,10 @@
 import { Account } from "../auth/auth.type";
 import { NotificationType } from "../../generated/prisma";
+import {
+  sendNotificationSelect,
+  getNotificationsSelect,
+} from "./notification.select";
+import { Prisma } from "../../generated/prisma";
 
 export type Notification = {
   id: string;
@@ -50,4 +55,30 @@ export type MarkNotificationReadPayload = {
 export type DeleteNotificationForMePayload = {
   accountId: string;
   notificationId: string;
+};
+
+export type SearchNotificationsPayload = {
+  accountId: string;
+  query: string;
+  limit?: number;
+  cursor?: string;
+};
+
+export type NotificationRecipientWithNotification =
+  Prisma.NotificationRecipientGetPayload<{
+    include: { notification: true };
+  }>;
+
+export type SendNotificationResult = Prisma.NotificationGetPayload<{
+  select: typeof sendNotificationSelect;
+}>;
+
+export type GetNotificationResult = Prisma.NotificationRecipientGetPayload<{
+  select: typeof getNotificationsSelect;
+}>;
+
+export type SearchNotificationsResult = {
+  total: number;
+  items: NotificationRecipientWithNotification[];
+  nextCursor: string | null;
 };

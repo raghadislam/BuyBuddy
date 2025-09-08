@@ -59,3 +59,29 @@ export const markReadZodSchema = z.object({
 });
 
 export const deleteForMeZodSchema = markReadZodSchema;
+
+export const searchNotificationsZodSchema = z.object({
+  body: z
+    .object({
+      query: z
+        .string()
+        .min(1, { message: "query is required and cannot be empty" }),
+    })
+    .strict(),
+
+  query: z
+    .object({
+      cursor: z
+        .string()
+        .uuid({ message: "cursor must be a valid UUID" })
+        .optional(),
+
+      limit: z
+        .preprocess((val) => {
+          if (val === undefined || val === null || val === "") return undefined;
+          return Number(val);
+        }, z.number().int().min(1, { message: "limit must be >= 1" }).max(100, { message: "limit must be <= 100" }).optional())
+        .default(50),
+    })
+    .strict(),
+});

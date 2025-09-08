@@ -38,3 +38,23 @@ export const deleteForMeSchema = z
       .uuid({ message: "notificationId is required and must be a valid UUID" }),
   })
   .strict();
+
+export const searchSchema = z
+  .object({
+    query: z
+      .string()
+      .min(1, { message: "query is required and cannot be empty" }),
+
+    cursor: z
+      .string()
+      .uuid({ message: "cursor must be a valid UUID" })
+      .optional(),
+
+    limit: z
+      .preprocess((val) => {
+        if (val === undefined || val === null || val === "") return undefined;
+        return Number(val);
+      }, z.number().int().min(1, { message: "limit must be >= 1" }).max(100, { message: "limit must be <= 100" }).optional())
+      .default(50),
+  })
+  .strict();

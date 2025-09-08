@@ -7,6 +7,7 @@ import {
   GetNotificationsPayload,
   MarkNotificationReadPayload,
   DeleteNotificationForMePayload,
+  SearchNotificationsPayload,
 } from "./notification.type";
 import {
   sendNotificationSelect,
@@ -210,6 +211,48 @@ class NotificationService implements INotificationService {
       );
       return { deleted: true, unreadCount };
     });
+  }
+
+  async searchNotificationsByString(payload: SearchNotificationsPayload) {
+    const { accountId, query, limit = 50, cursor } = payload;
+
+    if (cursor) {
+      const exists = await prisma.notificationRecipient.findUnique({
+        where: { id: cursor },
+        select: { id: true },
+      });
+      if (!exists) {
+        throw new APIError("Invalid cursor", HttpStatus.BadRequest);
+      }
+    }
+
+    const take = Math.min(Math.max(limit, 1), 100) + 1;
+
+    const recipients = await prisma.notificationRecipient.findMany({
+      where: {
+        accountId,
+        deletedAt: null,
+        notification: {
+          OR: [
+            { title: { contains: query, mode: "insensitive" } },
+            { body: { contains: query, mode: "insensitive" } },
+          ],
+        },
+      },
+      cursor: cursor ? { id: cursor } : undefined,
+      skip: cursor ? 1 : 0,
+      take,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: { notification: true },
+    });
+
+    let nextCursor: string | null = null;
+    if (recipients.length === take) {
+      const extra = recipients.pop()!;
+      nextCursor = extra.id;
+    }
+
+    return { total: recipients.length, items: recipients, nextCursor };
   }
 }
 
