@@ -9,6 +9,9 @@ export const productCardSelect: Prisma.ProductSelect = {
   material: true,
   status: true,
   createdAt: true,
+  avgRating: true,
+  ratingsCount: true,
+  reviews: true,
   images: {
     select: { id: true, url: true, altText: true, sortOrder: true },
     orderBy: { sortOrder: "asc" },
