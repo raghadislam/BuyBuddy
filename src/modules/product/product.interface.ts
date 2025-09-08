@@ -1,11 +1,7 @@
 import type { Prisma, Category, ProductStatus } from "../../generated/prisma";
+import { Page } from "../../utils/pagination";
 
-export type PageOptions = Readonly<{
-  page?: number; // 1-based
-  limit?: number; // default 20, max 100
-}>;
-
-export type ListProductsQuery = PageOptions &
+export type ListProductsQuery = Page &
   Readonly<{
     q?: string;
     brandId?: string;

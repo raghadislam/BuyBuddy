@@ -40,7 +40,11 @@ import {
   getProductsByTagSlug,
 } from "../tag/tag.controller";
 
+import reviewRouter from "../review/review.routes";
+
 const router = Router();
+
+router.use("/:productId/reviews", reviewRouter);
 
 router.get("/tags", validate(tagsBrowseQuerySchema), getAllTags);
 router.get("/tags/:tagSlug/products", getProductsByTagSlug);
@@ -95,7 +99,6 @@ router.post(
 );
 
 router.get("/:productId/tags", getTagsForProduct);
-
 router.post(
   "/:productId/tags",
   authenticate,
@@ -103,7 +106,6 @@ router.post(
   validate(attachTagBodySchema),
   attachTagToProduct
 );
-
 router.post(
   "/:productId/tags/bulk",
   authenticate,
@@ -111,14 +113,12 @@ router.post(
   validate(attachTagsBulkBodySchema),
   attachTagsToProductBulk
 );
-
 router.delete(
   "/:productId/tags/:tagSlug",
   authenticate,
   assertProductOwnership,
   detachTagFromProduct
 );
-
 router.post(
   "/:productId/tags/:tagSlug/pinned",
   authenticate,

@@ -96,6 +96,25 @@ enum ReactionType {
   ADMIRE
 }
 
+enum ReviewVisibility {
+  PUBLISHED
+  HIDDEN
+}
+
+enum VoteType {
+  UP // helpful
+  DOWN // not helpful
+}
+
+enum ReportReason {
+  SPAM
+  OFFENSIVE
+  INAPPROPRIATE
+  MISLEADING
+  FAKE_REVIEW
+  OTHER
+}
+
 model Account {
   id                         String                           @id @default(uuid())
   name                       String
@@ -137,6 +156,10 @@ model User {
   updatedAt      DateTime        @updatedAt
   paymentMethods PaymentMethod[]
   addresses      Address[]
+  reviews        Review[]
+  reviewVotes    ReviewVote[]
+  reviewReports  ReviewReport[]
+  reviewReplays  ReviewReply[]
 }
 
 model Address {
@@ -268,23 +291,28 @@ model PrivateMessageVisibility {
 }
 
 model Product {
-  id          String        @id @default(uuid())
-  brandId     String
-  category    Category
-  title       String
-  slug        String
-  description String?
-  attributes  Json?
-  status      ProductStatus @default(DRAFT)
-  material    String? // NEW: material (e.g., Cotton, Leather)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String        @id @default(uuid())
+  brandId      String
+  category     Category
+  title        String
+  slug         String
+  description  String?
+  attributes   Json?
+  status       ProductStatus @default(DRAFT)
+  material     String? // NEW: material (e.g., Cotton, Leather)
+  avgRating    Decimal       @default(0) @db.Decimal(3, 2)
+  ratingsCount Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   brand    Brand           @relation(fields: [brandId], references: [id])
   images   ProductImage[]
   variants Variant[]
   options  ProductOption[]
   tags     ProductTag[]
+  reviews  Review[]
+
+  imageVectors ProductImageEmbedding[]
 
   @@unique([brandId, slug])
   @@index([category, status, createdAt(sort: Desc)])
@@ -300,7 +328,8 @@ model ProductImage {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  product Product @relation(fields: [productId], references: [id])
+  product   Product                @relation(fields: [productId], references: [id])
+  embedding ProductImageEmbedding?
 
   @@unique([productId, sortOrder])
   @@index([productId])
@@ -409,4 +438,102 @@ model ProductTag {
 
   @@id([productId, tagId])
   @@index([tagId, productId])
+}
+
+model ProductImageEmbedding {
+  id             String                @id @default(uuid())
+  productImageId String                @unique
+  productId      String // denorm for filtering
+  model          String
+  dim            Int
+  vector         Unsupported("vector")
+  updatedAt      DateTime              @updatedAt
+
+  image   ProductImage @relation(fields: [productImageId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // @@index([model, dim])
+
+  @@index([productId])
+}
+
+model Review {
+  id           String           @id @default(uuid())
+  productId    String
+  userId       String
+  rating       Float
+  title        String
+  content      String
+  isVerified   Boolean          @default(false)
+  visibility   ReviewVisibility @default(PUBLISHED)
+  reported     Boolean          @default(false)
+  helpfulCount Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  images  ReviewImage[]
+  votes   ReviewVote[]
+  reports ReviewReport[]
+  replies ReviewReply[]
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId]) // one review per user per product
+  @@index([productId, rating, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model ReviewImage {
+  id        String   @id @default(uuid())
+  reviewId  String
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, sortOrder])
+}
+
+model ReviewVote {
+  id        String   @id @default(uuid())
+  reviewId  String
+  userId    String
+  type      VoteType
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@index([reviewId, type])
+}
+
+model ReviewReport {
+  id        String       @id @default(uuid())
+  reviewId  String
+  userId    String
+  reason    ReportReason
+  details   String?
+  createdAt DateTime     @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, createdAt(sort: Desc)])
+}
+
+model ReviewReply {
+  id        String   @id @default(uuid())
+  reviewId  String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, createdAt(sort: Desc)])
 }
