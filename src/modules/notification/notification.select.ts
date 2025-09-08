@@ -12,3 +12,10 @@ export const sendNotificationSelect: Prisma.NotificationSelect = {
     },
   },
 };
+
+export const getNotificationsSelect: Prisma.NotificationRecipientSelect = {
+  id: true,
+  notification: true,
+  createdAt: true,
+  readAt: true,
+};

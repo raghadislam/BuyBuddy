@@ -34,3 +34,10 @@ export interface SendNotificationPayload {
   data?: any;
   recipientIds?: string[];
 }
+
+export interface GetNotificationsPayload {
+  accountId: string;
+  cursor?: string;
+  limit?: number;
+  since?: Date;
+}

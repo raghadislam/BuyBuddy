@@ -2,7 +2,10 @@ import { RequestHandler } from "express";
 import notificationService from "./notification.service";
 import { sendResponse } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
-import { SendNotificationPayload } from "./notification.type";
+import {
+  SendNotificationPayload,
+  GetNotificationsPayload,
+} from "./notification.type";
 
 export const sendNotification: RequestHandler = async (req, res) => {
   const actorId = req.account?.id!;
@@ -21,5 +24,25 @@ export const sendNotification: RequestHandler = async (req, res) => {
     statusCode: HttpStatus.OK,
     message: "Notification created successfully.",
     data: result,
+  });
+};
+
+export const getNotifications: RequestHandler = async (req, res) => {
+  const accountId = req.account?.id!;
+  const { cursor, since, limit } = req.query;
+
+  const payload: GetNotificationsPayload = {
+    accountId,
+    cursor: cursor as string,
+    limit: limit ? parseInt(limit as string, 10) : undefined,
+    since: since ? new Date(since as string) : undefined,
+  };
+
+  const data = await notificationService.getNotifications(payload);
+
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Notifications fetched successfully.",
+    data,
   });
 };

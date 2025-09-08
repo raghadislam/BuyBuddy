@@ -24,3 +24,28 @@ export const notificationPayload = z.object({
 export const sendNotificationZodSchema = z.object({
   body: notificationPayload.strict(),
 });
+
+export const getNotificationsZodSchema = z.object({
+  query: z
+    .object({
+      cursor: z
+        .string()
+        .uuid({ message: "cursor must be a valid UUID" })
+        .optional(),
+
+      since: z
+        .string()
+        .optional()
+        .refine((s) => !s || !Number.isNaN(Date.parse(s)), {
+          message: "since must be a valid date string (ISO 8601 recommended)",
+        }),
+
+      limit: z
+        .preprocess((val) => {
+          if (val === undefined || val === null || val === "") return undefined;
+          return Number(val);
+        }, z.number().int().min(1, { message: "limit must be >= 1" }).max(100, { message: "limit must be <= 100" }).optional())
+        .default(50),
+    })
+    .strict(),
+});
