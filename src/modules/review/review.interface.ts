@@ -51,7 +51,8 @@ export interface ReviewServices {
   reportReview(
     reviewId: string,
     userId: string,
-    reason: ReportReason
+    reason: ReportReason,
+    details?: string
   ): Promise<void>;
 
   replyToReview(
