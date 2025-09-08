@@ -1,18 +1,21 @@
 import { Server } from "socket.io";
 import { fromError } from "zod-validation-error";
 
-import { CustomSocket } from "../socket.type";
-import prisma from "../../../config/prisma.config";
-import logger from "../../../config/logger.config";
-import APIError from "../../../utils/APIError";
-import { HttpStatus } from "../../../enums/httpStatus.enum";
-import { EVENTS } from "../socket.event";
+import { CustomSocket } from "../../../../services/socket/socket.type";
+import prisma from "../../../../config/prisma.config";
+import logger from "../../../../config/logger.config";
+import APIError from "../../../../utils/APIError";
+import { HttpStatus } from "../../../../enums/httpStatus.enum";
+import { EVENTS } from "../../../../services/socket/socket.event";
 import {
   joinConversationRoom,
   leaveConversationRoom,
-} from "../utils/joinRooms.util";
-import { joinSchema, leaveSchema } from "../validation/conversation.validation";
-import { validate } from "../utils/validate.util";
+} from "../../../../services/socket/utils/joinRooms.util";
+import {
+  joinSchema,
+  leaveSchema,
+} from "../../../../services/socket/validation/conversation.validation";
+import { validate } from "../../../../services/socket/utils/validate.util";
 
 export default async function conversationHandler(
   io: Server,

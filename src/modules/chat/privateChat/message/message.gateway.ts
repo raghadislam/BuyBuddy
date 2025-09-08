@@ -1,14 +1,14 @@
 import { Server } from "socket.io";
 import { fromError } from "zod-validation-error";
 
-import logger from "../../../config/logger.config";
-import { CustomSocket } from "../socket.type";
-import messageService from "../../../modules/chat/privateChat/message/message.service";
-import { EVENTS } from "../socket.event";
+import logger from "../../../../config/logger.config";
+import { CustomSocket } from "../../../../services/socket/socket.type";
+import messageService from "./message.service";
+import { EVENTS } from "../../../../services/socket/socket.event";
 import {
   conversationRoomName,
   joinConversationRoom,
-} from "../utils/joinRooms.util";
+} from "../../../../services/socket/utils/joinRooms.util";
 import {
   ReactToPrivateMessage,
   SendPrivateMessagePayload,
@@ -16,7 +16,7 @@ import {
   DeleteForMePayload,
   DeleteForAllPayload,
   SearchMessagesPayload,
-} from "../../../modules/chat/privateChat/message/message.type";
+} from "./message.type";
 import {
   sendSchema,
   reactSchema,
@@ -24,8 +24,8 @@ import {
   deleteForMeSchema,
   deleteForAllSchema,
   searchSchema,
-} from "../validation/message.validation";
-import { validate } from "../utils/validate.util";
+} from "../../../../services/socket/validation/message.validation";
+import { validate } from "../../../../services/socket/utils/validate.util";
 
 export default function messageHandler(io: Server, socket: CustomSocket) {
   const accountId = socket.data.accountId;

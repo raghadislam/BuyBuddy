@@ -1,12 +1,12 @@
 import { Server, Socket } from "socket.io";
 
-import { CustomSocket } from "../socket.type";
-import conversationHandler from "./conversation.handler";
-import messageHandler from "./message.handler";
-import { joinRoomsOnConnect } from "../utils/joinRooms.util";
-import logger from "../../../config/logger.config";
-import { HttpStatus } from "../../../enums/httpStatus.enum";
-import { EVENTS } from "../socket.event";
+import { CustomSocket } from "./socket.type";
+import conversationHandler from "../../modules/chat/privateChat/conversation/conversation.gateway";
+import messageHandler from "../../modules/chat/privateChat/message/message.gateway";
+import { joinRoomsOnConnect } from "./utils/joinRooms.util";
+import logger from "../../config/logger.config";
+import { HttpStatus } from "../../enums/httpStatus.enum";
+import { EVENTS } from "./socket.event";
 
 export default function connectionHandler(io: Server, socketRaw: Socket) {
   const socket = socketRaw as CustomSocket;
