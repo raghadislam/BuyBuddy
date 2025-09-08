@@ -3,15 +3,14 @@ import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
 import { sendResponse } from "../../utils/response";
 import reviewService from "./review.service";
-import { ReviewVisibility } from "../../generated/prisma";
+import { ReviewVisibility, VoteType } from "../../generated/prisma";
 
-const uid = (req: Request) => (req as any).account?.id as string;
+const uid = (req: Request) => (req as any).account?.user?.id as string;
 
 export const createReview = async (req: Request, res: Response) => {
   const productId = req.params.productId;
 
   // TODO: complete "isVerified" logic after implementing the orders logic
-  console.log(uid(req));
 
   const review = await reviewService.createReview(productId, uid(req), {
     ...req.body,
@@ -58,7 +57,12 @@ export const deleteReview = async (req: Request, res: Response) => {
 
 export const voteReview = async (req: Request, res: Response) => {
   const reviewId = req.params.reviewId;
-  const updated = await reviewService.voteReview(reviewId, uid(req), req.body);
+
+  const updated = await reviewService.voteReview(
+    reviewId,
+    uid(req),
+    req.body.type as VoteType
+  );
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     data: updated,
@@ -83,11 +87,6 @@ export const replyToReview = async (req: Request, res: Response) => {
   const reviewId = req.params.reviewId;
 
   const content = (req.body?.content as string) ?? "";
-  if (content.length < 1)
-    sendResponse(res, {
-      statusCode: HttpStatus.BadRequest,
-      message: "content required",
-    });
 
   const reply = await reviewService.replyToReview(reviewId, uid(req), content);
   sendResponse(res, {
