@@ -26,18 +26,23 @@ export type NotificationRecipient = {
   updatedAt: Date;
 };
 
-export interface SendNotificationPayload {
+export type SendNotificationPayload = {
   actorId?: string | null;
   type: NotificationType;
   title: string;
   body: string;
   data?: any;
   recipientIds?: string[];
-}
+};
 
-export interface GetNotificationsPayload {
+export type GetNotificationsPayload = {
   accountId: string;
   cursor?: string;
   limit?: number;
   since?: Date;
-}
+};
+
+export type MarkNotificationReadPayload = {
+  accountId: string;
+  notificationId: string;
+};

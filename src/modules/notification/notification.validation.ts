@@ -49,3 +49,13 @@ export const getNotificationsZodSchema = z.object({
     })
     .strict(),
 });
+
+export const markReadZodSchema = z.object({
+  params: z
+    .object({
+      notificationId: z
+        .string()
+        .uuid({ message: "notificationId must be a valid UUID" }),
+    })
+    .strict(),
+});

@@ -5,6 +5,7 @@ import { HttpStatus } from "../../enums/httpStatus.enum";
 import {
   SendNotificationPayload,
   GetNotificationsPayload,
+  MarkNotificationReadPayload,
 } from "./notification.type";
 
 export const sendNotification: RequestHandler = async (req, res) => {
@@ -44,5 +45,19 @@ export const getNotifications: RequestHandler = async (req, res) => {
     statusCode: HttpStatus.OK,
     message: "Notifications fetched successfully.",
     data,
+  });
+};
+
+export const markNotificationRead: RequestHandler = async (req, res) => {
+  const payload: MarkNotificationReadPayload = {
+    accountId: req.account?.id!,
+    notificationId: req.params.notificationId,
+  };
+
+  const result = await notificationService.markNotificationRead(payload);
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Notification marked read successfully.",
+    data: result,
   });
 };

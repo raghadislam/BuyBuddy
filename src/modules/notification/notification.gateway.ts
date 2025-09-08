@@ -6,8 +6,14 @@ import notificationService from "./notification.service";
 import { EVENTS } from "../../services/socket/socket.event";
 import { validate } from "../../services/socket/utils/validate.util";
 import { accountRoomName } from "../../services/socket/utils/joinRooms.util";
-import { sendSchema } from "../../services/socket/validation/notification.validation";
-import { SendNotificationPayload } from "./notification.type";
+import {
+  sendSchema,
+  markReadSchema,
+} from "../../services/socket/validation/notification.validation";
+import {
+  SendNotificationPayload,
+  MarkNotificationReadPayload,
+} from "./notification.type";
 
 export default function notificationGateway(io: Server, socket: CustomSocket) {
   const accountId = socket.data.accountId;
@@ -53,6 +59,38 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
       ack?.({
         status: "error",
         message: err?.message ?? "Failed to send notification",
+      });
+    }
+  });
+
+  socket.on(EVENTS.NOTIFICATION_MARK_READ, async (rawPayload, ack) => {
+    try {
+      let data;
+      try {
+        data = validate(markReadSchema, rawPayload);
+      } catch (err) {
+        const error = fromError(err);
+        return ack?.({ status: "error", message: error.message });
+      }
+
+      const payload: MarkNotificationReadPayload = {
+        accountId,
+        notificationId: data.notificationId,
+      };
+
+      const result = await notificationService.markNotificationRead(payload);
+
+      socket.emit(EVENTS.NOTIFICATION_READ, {
+        data,
+        result,
+      });
+
+      ack?.({ status: "ok", data: result });
+    } catch (err: any) {
+      logger.error("notification:mark-read failed", { err, accountId });
+      ack?.({
+        status: "error",
+        message: err?.message ?? "Failed to mark read",
       });
     }
   });

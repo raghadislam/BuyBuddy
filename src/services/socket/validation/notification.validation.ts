@@ -24,3 +24,11 @@ export const sendSchema = z
       .optional(),
   })
   .strict();
+
+export const markReadSchema = z
+  .object({
+    notificationId: z
+      .string()
+      .uuid({ message: "notificationId is required and must be a valid UUID" }),
+  })
+  .strict();

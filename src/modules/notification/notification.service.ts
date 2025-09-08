@@ -5,6 +5,7 @@ import { HttpStatus } from "../../enums/httpStatus.enum";
 import {
   SendNotificationPayload,
   GetNotificationsPayload,
+  MarkNotificationReadPayload,
 } from "./notification.type";
 import {
   sendNotificationSelect,
@@ -101,6 +102,44 @@ class NotificationService implements INotificationService {
     }
 
     return { items: recipients, nextCursor };
+  }
+
+  async markNotificationRead(payload: MarkNotificationReadPayload) {
+    const { accountId, notificationId } = payload;
+
+    const existing = await prisma.notificationRecipient.findUnique({
+      where: { notificationId_accountId: { notificationId, accountId } },
+      select: { id: true, readAt: true, deletedAt: true },
+    });
+
+    if (!existing || existing.deletedAt) {
+      throw new APIError(
+        "You are not authorized to read this notification",
+        HttpStatus.Forbidden
+      );
+    }
+    if (existing.readAt) {
+      throw new APIError(
+        "Notification already marked read",
+        HttpStatus.Conflict
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.notificationRecipient.update({
+        where: { id: existing.id },
+        data: { readAt: new Date() },
+      });
+
+      const unreadCount = await tx.notificationRecipient.count({
+        where: { accountId, readAt: null, deletedAt: null },
+      });
+
+      logger.info(
+        `Account ${accountId} marked notification ${notificationId} read`
+      );
+      return { marked: 1, unreadCount };
+    });
   }
 }
 

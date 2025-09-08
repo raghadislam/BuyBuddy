@@ -18,4 +18,6 @@ export const EVENTS = {
   // notifications
   NOTIFICATION_SEND: "notification:send",
   NOTIFICATION_SENT: "notification:sent",
+  NOTIFICATION_MARK_READ: "notification:markRead",
+  NOTIFICATION_READ: "notification:read",
 } as const;
