@@ -115,6 +115,17 @@ enum ReportReason {
   OTHER
 }
 
+enum NotificationType {
+  MESSAGE
+  ORDER
+  PROMOTION
+  SYSTEM
+  SECURITY
+  REVIEW
+  SHIPPING
+  OTHER
+}
+
 model Account {
   id                         String                           @id @default(uuid())
   name                       String
@@ -137,6 +148,8 @@ model Account {
   sentPrivateMessages        PrivateMessage[]                 @relation("SentMessages")
   reactedMessages            PrivateMessage[]                 @relation("ReactedMessages")
   privateMessageVisibilities PrivateMessageVisibility[]
+  Notification               Notification[]
+  NotificationRecipient      NotificationRecipient[]
 
   @@unique([provider, providerId])
   @@index([status])
@@ -536,4 +549,37 @@ model ReviewReply {
   author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([reviewId, createdAt(sort: Desc)])
+}
+
+/// Canonical notification
+model Notification {
+  id         String                  @id @default(uuid())
+  actorId    String? // account who caused the notification (nullable for system)
+  actor      Account?                @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  type       NotificationType
+  title      String
+  body       String // optional long body
+  data       Json? // arbitrary metadata (orderId, messageId, etc.)
+  createdAt  DateTime                @default(now())
+  recipients NotificationRecipient[]
+
+  @@index([createdAt])
+  @@index([type])
+}
+
+/// Per-account read/delivery state
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  notificationId String
+  account        Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId      String
+  readAt         DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([notificationId, accountId])
+  @@index([accountId, readAt])
+  @@index([notificationId])
 }
