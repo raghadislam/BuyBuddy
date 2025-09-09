@@ -6,7 +6,7 @@ import {
   verifyRefreshToken,
 } from "../modules/auth/token.service";
 import prisma from "../config/prisma.config";
-import { Status } from "../generated/prisma";
+import { Status } from "@prisma/client";
 import { accountSafeSelect } from "../modules/auth/auth.select";
 import { Account } from "../modules/auth/auth.type";
 

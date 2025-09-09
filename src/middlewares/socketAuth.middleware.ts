@@ -9,7 +9,7 @@ import {
 } from "../modules/auth/token.service";
 import prisma from "../config/prisma.config";
 import { accountSafeSelect } from "../modules/auth/auth.select";
-import { Status } from "../generated/prisma";
+import { Status } from "@prisma/client";
 
 type CustomSocket = Socket & { data: { accountId?: string } };
 

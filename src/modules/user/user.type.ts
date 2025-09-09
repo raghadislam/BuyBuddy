@@ -1,5 +1,5 @@
 import { Account } from "../auth/auth.type";
-import { Gender, PaymentMethod } from "../../generated/prisma";
+import { Gender, PaymentMethod } from "../@prisma/client";
 
 export type User = {
   id: string;

@@ -3,7 +3,7 @@ import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
 import { sendResponse } from "../../utils/response";
 import reviewService from "./review.service";
-import { ReviewVisibility } from "../../generated/prisma";
+import { ReviewVisibility } from "@prisma/client";
 
 const uid = (req: Request) => (req as any).account?.id as string;
 

@@ -7,7 +7,7 @@ import env from "./env.config";
 import { HttpStatus } from "../enums/httpStatus.enum";
 import APIError from "../utils/APIError";
 import { hashPassword } from "../utils/hash";
-import { Status, Provider } from "../generated/prisma";
+import { Status, Provider } from "@prisma/client";
 import { Account } from "../modules/auth/auth.type";
 import { accountSafeSelect } from "../modules/auth/auth.select";
 import { sendAccountActivatedEmail } from "../services/email/send";

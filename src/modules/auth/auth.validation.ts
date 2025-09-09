@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Role, Category } from "../../generated/prisma";
+import { Role, Category } from "@prisma/client";
 
 export const signupZodSchema = z.object({
   body: z

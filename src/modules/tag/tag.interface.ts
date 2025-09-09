@@ -1,4 +1,4 @@
-import { Prisma, Tag, Product, ProductTag } from "../../generated/prisma";
+import { Prisma, Tag, Product, ProductTag } from "../@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { Page } from "../../utils/pagination";
 

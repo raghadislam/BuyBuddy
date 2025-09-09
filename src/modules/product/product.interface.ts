@@ -1,4 +1,4 @@
-import type { Prisma, Category, ProductStatus } from "../../generated/prisma";
+import type { Prisma, Category, ProductStatus } from "@prisma/client";
 import { Page } from "../../utils/pagination";
 
 export type ListProductsQuery = Page &

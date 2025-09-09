@@ -8,7 +8,7 @@ import {
   ReportReason,
   VoteType,
   ReviewVisibility,
-} from "../../generated/prisma";
+} from "@prisma/client";
 import { ReviewServices, ListReviewsQuery } from "./review.interface";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";

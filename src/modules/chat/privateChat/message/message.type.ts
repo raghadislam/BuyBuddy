@@ -4,7 +4,7 @@ import {
   PrivateMessageAttachment,
   SendMessageAttachment,
 } from "../messageAttachment/messageAttachment.type";
-import { ContentType, ReactionType } from "../../../../generated/prisma";
+import { ContentType, ReactionType } from "@prisma/client";
 import { PrivateMessageVisibility } from "../messageVisibility/messageVisibility.type";
 import { MatchType } from "../../../../enums/matchType.enum";
 

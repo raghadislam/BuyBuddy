@@ -14,7 +14,7 @@ import {
   getNotificationsSelect,
 } from "./notification.select";
 import { INotificationService } from "./notification.interface";
-import { Status } from "../../generated/prisma";
+import { Status } from "@prisma/client";
 
 class NotificationService implements INotificationService {
   async sendNotification(payload: SendNotificationPayload) {

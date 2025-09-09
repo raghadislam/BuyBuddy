@@ -11,7 +11,7 @@ import {
   UnarchivePrivateConversation,
   MarkReadPayload,
 } from "./conversation.type";
-import { Role, Status } from "../../../../generated/prisma";
+import { Role, Status } from "@prisma/client";
 import { chatParticipantSelect } from "../../../auth/auth.select";
 
 class PrivateConverstionService {
