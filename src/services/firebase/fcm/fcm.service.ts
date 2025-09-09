@@ -1,5 +1,7 @@
 import prisma from "../../../config/prisma.config";
-import { RegisterTokenPayload } from "./fcm.type";
+import { RegisterTokenPayload, UnregisterTokenPayload } from "./fcm.type";
+import { HttpStatus } from "../../../enums/httpStatus.enum";
+import APIError from "../../../utils/APIError";
 
 class FcmService {
   async registerToken(payload: RegisterTokenPayload) {
@@ -22,6 +24,27 @@ class FcmService {
     });
 
     return result;
+  }
+
+  async unregisterToken(payload: UnregisterTokenPayload) {
+    const { token, accountId } = payload;
+
+    const tokenRecord = await prisma.deviceToken.findUnique({
+      where: { token },
+      select: { accountId: true },
+    });
+
+    if (!tokenRecord || tokenRecord.accountId !== accountId) {
+      throw new APIError(
+        "Token does not belong to the user",
+        HttpStatus.Forbidden
+      );
+    }
+
+    await prisma.deviceToken.updateMany({
+      where: { token },
+      data: { isActive: false },
+    });
   }
 }
 

@@ -1,8 +1,11 @@
 import express from "express";
-import { registerToken } from "./fcm.controller";
+import { registerToken, unregisterToken } from "./fcm.controller";
 import { authenticate } from "../../../middlewares/authenticate.middleware";
 import { validate } from "../../../middlewares/validation.middleware";
-import { registerTokenZodSchema } from "./fcm.validation";
+import {
+  registerTokenZodSchema,
+  unregisterTokenZodSchema,
+} from "./fcm.validation";
 
 const router = express.Router();
 
@@ -11,6 +14,13 @@ router.post(
   authenticate,
   validate(registerTokenZodSchema),
   registerToken
+);
+
+router.post(
+  "/unregister-token",
+  authenticate,
+  validate(unregisterTokenZodSchema),
+  unregisterToken
 );
 
 export default router;
