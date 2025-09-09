@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - postify-api
+name: Build and deploy Node.js app to Azure Web App - BuyBuddy
 
 on:
   push:
@@ -71,14 +71,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A1CEE9EFC2AE41DA8F8711CA0099E6AA }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_34BD9CD1312C44E3895D322B7BF16EA7 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4C72C66A69A940EC8184C03BB774B909 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C1E342BBE2204F4393665F8DB09D43EC }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0BDCFCCD277944B090FD51849D5C784C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9C1D87E002FF4E458D4845E1EBE32BEB }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'postify-api'
+          app-name: 'BuyBuddy'
           slot-name: 'Production'
           package: .
+
