@@ -1,7 +1,13 @@
 import prisma from "../../../config/prisma.config";
-import { RegisterTokenPayload, UnregisterTokenPayload } from "./fcm.type";
+import {
+  RegisterTokenPayload,
+  UnregisterTokenPayload,
+  SubscribeToTopicPayload,
+  UnsubscribeFromTopic,
+} from "./fcm.type";
 import { HttpStatus } from "../../../enums/httpStatus.enum";
 import APIError from "../../../utils/APIError";
+import fcm from "../firbase.setup";
 
 class FcmService {
   async registerToken(payload: RegisterTokenPayload) {
@@ -45,6 +51,52 @@ class FcmService {
       where: { token },
       data: { isActive: false },
     });
+  }
+
+  async subscribeToTopic(payload: SubscribeToTopicPayload) {
+    const { tokens, topic } = payload;
+
+    const validTokens = await prisma.deviceToken.findMany({
+      where: {
+        token: { in: tokens },
+      },
+      select: { token: true },
+    });
+
+    if (validTokens.length !== tokens.length) {
+      throw new APIError(
+        "Some tokens are not active or not found",
+        HttpStatus.BadRequest
+      );
+    }
+
+    return fcm.subscribeToTopic(
+      validTokens.map((t) => t.token),
+      topic
+    );
+  }
+
+  async unsubscribeFromTopic(payload: UnsubscribeFromTopic) {
+    const { tokens, topic } = payload;
+
+    const validTokens = await prisma.deviceToken.findMany({
+      where: {
+        token: { in: tokens },
+      },
+      select: { token: true },
+    });
+
+    if (validTokens.length !== tokens.length) {
+      throw new APIError(
+        "Some tokens are not active or not found",
+        HttpStatus.BadRequest
+      );
+    }
+
+    return fcm.unsubscribeFromTopic(
+      validTokens.map((t) => t.token),
+      topic
+    );
   }
 }
 
