@@ -20,6 +20,8 @@ export default z
         message: "DATABASE_URL must be a PostgreSQL connection string",
       }),
 
+    BASE_URL: z.string().url("BASE_URL must be a valid URL"),
+
     EMAIL_FROM: z.string().min(3),
     TEMPLATES_PATH: z.string().default("src/services/email/templates"),
 
