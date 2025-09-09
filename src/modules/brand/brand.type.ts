@@ -1,5 +1,5 @@
 import { Account } from "../auth/auth.type";
-import { BrandStatus, Category, PaymentMethod } from "../@prisma/client";
+import { BrandStatus, Category, PaymentMethod } from "@prisma/client";
 
 export type Brand = {
   id: string;

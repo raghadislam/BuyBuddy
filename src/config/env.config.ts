@@ -70,5 +70,13 @@ export default z
     JWT_COOKIE_EXPIRES_IN: z.coerce.number(),
 
     APP_NAME: z.string().min(1, `PP_NAME is required`),
+
+    // Firebase
+    FB_PROJECT_ID: z.string().min(1, "FB_PROJECT_ID is required"),
+    FB_PRIVATE_KEY: z
+      .string()
+      .min(1, "FB_PRIVATE_KEY is required")
+      .transform((val) => val.replace(/\\n/g, "\n")),
+    FB_CLIENT_EMAIL: z.string().min(1, "FB_CLIENT_EMAIL is required"),
   })
   .parse(process.env);

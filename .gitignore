@@ -1,9 +1,5 @@
 node_modules
 
-/src/generated/prisma
-
 logs
 
 .env
-
-serviceAccountKey.json
