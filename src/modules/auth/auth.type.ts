@@ -1,4 +1,4 @@
-import { Role, Status, Provider } from "../../generated/prisma";
+import { Role, Status, Provider, Category } from "../../generated/prisma";
 import { Brand } from "../brand/brand.type";
 import { User } from "../user/user.type";
 
@@ -27,6 +27,7 @@ export type SignupPayload = {
   password: string;
   role: Extract<Role, "USER" | "BRAND">;
   userName?: string;
+  categories: Category[];
 };
 export type VerfiyEmail = {
   code: string;

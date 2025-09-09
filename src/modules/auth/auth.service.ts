@@ -141,6 +141,23 @@ class AuthService {
       );
     }
 
+    if (
+      payload.role === Role.BRAND &&
+      (!payload.categories || payload.categories.length === 0)
+    ) {
+      throw new APIError(
+        "At least one category is required for brand accounts.",
+        HttpStatus.UnprocessableEntity
+      );
+    }
+
+    if (payload.role === Role.USER && payload.categories) {
+      throw new APIError(
+        "Categories should not be provided for user accounts.",
+        HttpStatus.UnprocessableEntity
+      );
+    }
+
     // Hash password and create new account
     payload.password = await hashPassword(payload.password);
 
@@ -155,7 +172,7 @@ class AuthService {
 
     // Conditionally attach relation
     if (payload.role === Role.BRAND) {
-      data.brand = { create: {} };
+      data.brand = { create: { categories: { set: payload.categories } } };
     } else if (payload.role === Role.USER) {
       data.user = { create: { userName: payload.userName } };
     }
