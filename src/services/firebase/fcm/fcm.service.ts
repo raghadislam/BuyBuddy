@@ -1,15 +1,51 @@
+import pLimit from "p-limit";
+
 import prisma from "../../../config/prisma.config";
 import {
   RegisterTokenPayload,
   UnregisterTokenPayload,
   SubscribeToTopicPayload,
   UnsubscribeFromTopic,
+  SendToTopicPayload,
+  SendToTokensPayload,
+  SendToAccountPayload,
 } from "./fcm.type";
 import { HttpStatus } from "../../../enums/httpStatus.enum";
 import APIError from "../../../utils/APIError";
 import fcm from "../firbase.setup";
 
 class FcmService {
+  private async sendToTokens(payload: SendToTokensPayload) {
+    const { tokens, title, body, data } = payload;
+    const limit = pLimit(10);
+
+    const results = await Promise.all(
+      tokens.map((token) =>
+        limit(async () => {
+          try {
+            await fcm.send({
+              token,
+              notification: { title, body },
+              data,
+            });
+            return { success: 1, failure: 0 };
+          } catch (error) {
+            return { success: 0, failure: 1 };
+          }
+        })
+      )
+    );
+
+    // sum results
+    return results.reduce(
+      (acc, cur) => ({
+        success: acc.success + cur.success,
+        failure: acc.failure + cur.failure,
+      }),
+      { success: 0, failure: 0 }
+    );
+  }
+
   async registerToken(payload: RegisterTokenPayload) {
     const { accountId, token } = payload;
     const now = new Date();
@@ -97,6 +133,48 @@ class FcmService {
       validTokens.map((t) => t.token),
       topic
     );
+  }
+
+  async sendToAccount(payload: SendToAccountPayload) {
+    const { accountId, title, body, data } = payload;
+
+    const tokens = await prisma.deviceToken.findMany({
+      where: {
+        accountId,
+        isActive: true,
+      },
+      select: { token: true },
+    });
+
+    if (tokens.length === 0) {
+      throw new APIError(
+        "No active tokens found for account",
+        HttpStatus.NotFound
+      );
+    }
+
+    const sendPayload: SendToTokensPayload = {
+      title,
+      body,
+      data,
+      tokens: tokens.map((t) => t.token),
+    };
+    return this.sendToTokens(sendPayload);
+  }
+
+  async sendToTopic(payload: SendToTopicPayload) {
+    const { topic, title, body, data } = payload;
+
+    try {
+      const result = await fcm.send({
+        topic,
+        notification: { title, body },
+        data,
+      });
+      return { success: true, result };
+    } catch (error) {
+      return { success: false, error };
+    }
   }
 }
 

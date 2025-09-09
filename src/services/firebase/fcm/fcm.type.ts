@@ -14,3 +14,24 @@ export type SubscribeToTopicPayload = {
 };
 
 export type UnsubscribeFromTopic = SubscribeToTopicPayload;
+
+export type SendToTokensPayload = {
+  tokens: string[];
+  title: string;
+  body: string;
+  data?: JSON;
+};
+
+export type SendToAccountPayload = {
+  accountId: string;
+  title: string;
+  body: string;
+  data?: JSON;
+};
+
+export type SendToTopicPayload = {
+  topic: string;
+  title: string;
+  body: string;
+  data?: JSON;
+};
