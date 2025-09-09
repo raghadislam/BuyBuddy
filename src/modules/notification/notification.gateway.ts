@@ -17,6 +17,7 @@ import {
   MarkNotificationReadPayload,
   SearchNotificationsPayload,
 } from "./notification.type";
+import fcmService from "../../services/firebase/fcm/fcm.service";
 
 export default function notificationGateway(io: Server, socket: CustomSocket) {
   const accountId = socket.data.accountId;
@@ -27,7 +28,6 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
     return;
   }
 
-  // Only server -> clients for new notifications.
   socket.on(EVENTS.NOTIFICATION_SEND, async (rawPayload, ack) => {
     try {
       let data;
@@ -49,12 +49,45 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
 
       const result = await notificationService.sendNotification(payload);
 
-      // emit to recipients if present
-      if (data.recipientIds && data.recipientIds.length > 0) {
-        data.recipientIds.forEach((rid: string) => {
+      const recipientIds: string[] = data.recipientIds ?? [];
+
+      // split recipients into connected vs disconnected
+      const connected: string[] = [];
+      const disconnected: string[] = [];
+
+      for (const rid of recipientIds) {
+        const room = io.sockets.adapter.rooms.get(accountRoomName(rid));
+        if (room && room.size > 0) connected.push(rid);
+        else disconnected.push(rid);
+      }
+
+      // emit to connected recipients if present
+      if (connected.length > 0) {
+        connected.forEach((rid: string) => {
           io.to(accountRoomName(rid)).emit(EVENTS.NOTIFICATION_SENT, result);
         });
       }
+
+      // Send FCM for disconnected recipients.
+      await Promise.all(
+        disconnected.map(async (rid) => {
+          try {
+            await fcmService.sendToAccount({
+              accountId: rid,
+              title: data.title,
+              body: data.body,
+              data: data.data,
+            });
+          } catch (err) {
+            logger.error("fcm:sendToAccount failed", {
+              err,
+              to: rid,
+              accountId,
+            });
+            throw err;
+          }
+        })
+      );
 
       ack?.({ status: "ok", data: result });
     } catch (err: any) {
