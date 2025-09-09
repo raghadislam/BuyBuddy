@@ -5,6 +5,10 @@ export function conversationRoomName(conversationId: string) {
   return `conversation:${conversationId}`;
 }
 
+export function accountRoomName(accountId: string) {
+  return `account:${accountId}`;
+}
+
 export async function joinRoomsOnConnect(
   socket: CustomSocket,
   accountId: string
@@ -17,6 +21,8 @@ export async function joinRoomsOnConnect(
   participants.forEach((p) =>
     socket.join(conversationRoomName(p.conversationId))
   );
+
+  socket.join(accountRoomName(accountId));
 }
 
 export async function joinConversationRoom(
@@ -24,6 +30,10 @@ export async function joinConversationRoom(
   conversationId: string
 ) {
   await socket.join(conversationRoomName(conversationId));
+}
+
+export async function joinAccountRoom(socket: CustomSocket, accountId: string) {
+  await socket.join(accountRoomName(accountId));
 }
 
 export async function leaveConversationRoom(

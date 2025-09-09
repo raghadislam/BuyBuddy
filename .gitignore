@@ -6,4 +6,4 @@ logs
 
 .env
 
-coverage/
+serviceAccountKey.json

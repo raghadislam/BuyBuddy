@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-import { ContentType, ReactionType } from "../../../generated/prisma";
-import { MatchType } from "../../../enums/matchType.enum";
-
 export const joinSchema = z
   .object({
     conversationId: z

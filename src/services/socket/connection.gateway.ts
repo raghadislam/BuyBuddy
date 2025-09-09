@@ -1,14 +1,15 @@
 import { Server, Socket } from "socket.io";
 
-import { CustomSocket } from "../socket.type";
-import conversationHandler from "./conversation.handler";
-import messageHandler from "./message.handler";
-import { joinRoomsOnConnect } from "../utils/joinRooms.util";
-import logger from "../../../config/logger.config";
-import { HttpStatus } from "../../../enums/httpStatus.enum";
-import { EVENTS } from "../socket.event";
+import { CustomSocket } from "./socket.type";
+import conversationGateway from "../../modules/chat/privateChat/conversation/conversation.gateway";
+import messageGateway from "../../modules/chat/privateChat/message/message.gateway";
+import notificationGateway from "../../modules/notification/notification.gateway";
+import { joinRoomsOnConnect } from "./utils/joinRooms.util";
+import logger from "../../config/logger.config";
+import { HttpStatus } from "../../enums/httpStatus.enum";
+import { EVENTS } from "./socket.event";
 
-export default function connectionHandler(io: Server, socketRaw: Socket) {
+export default function connectionGateway(io: Server, socketRaw: Socket) {
   const socket = socketRaw as CustomSocket;
   const accountId = socket.data.accountId;
 
@@ -40,10 +41,13 @@ export default function connectionHandler(io: Server, socketRaw: Socket) {
   });
 
   // register join/leave
-  conversationHandler(io, socket);
+  conversationGateway(io, socket);
 
-  // register message handlers
-  messageHandler(io, socket);
+  // register message gateway
+  messageGateway(io, socket);
+
+  // register notification gateway
+  notificationGateway;
 
   // notify others when this socket disconnects
   socket.on(EVENTS.DISCONNECT, (reason) => {

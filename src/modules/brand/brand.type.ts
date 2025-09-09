@@ -7,11 +7,11 @@ export type Brand = {
   accountId: string;
   description?: string;
   logo?: string;
-  category: Category[];
+  categories: Category[];
   status: BrandStatus;
   instagramUrl?: string;
   tiktokUrl?: string;
-  bussinessPhone?: String;
+  businessPhone?: String;
   ownerName?: string;
   ownerNationalId?: string;
   ownerPhone?: string;
@@ -28,7 +28,7 @@ export type UpdateBrandProfile = {
   categories: Category[];
   instagramUrl?: string;
   tiktokUrl?: string;
-  bussinessPhone?: string;
+  businessPhone?: string;
   ownerName?: string;
   ownerNationalId?: string;
   ownerPhone?: string;

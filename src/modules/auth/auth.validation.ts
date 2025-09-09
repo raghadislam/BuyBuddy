@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Role } from "../../generated/prisma";
+import { Role, Category } from "../../generated/prisma";
 
 export const signupZodSchema = z.object({
   body: z
@@ -20,6 +20,15 @@ export const signupZodSchema = z.object({
         .string()
         .min(3, "Username should be at least 3 characters")
         .max(15, "Username cannot be more than 15 characters")
+        .optional(),
+
+      categories: z
+        .array(z.nativeEnum(Category))
+        .nonempty("At least one category is required")
+        .refine(
+          (vals) => vals.every((val) => Object.values(Category).includes(val)),
+          { message: "Invalid category" }
+        )
         .optional(),
     })
     .strict(),

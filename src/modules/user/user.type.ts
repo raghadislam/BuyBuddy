@@ -17,7 +17,7 @@ export type User = {
 };
 
 export type UpdateUserProfile = {
-  userName?: string;
+  userName: string;
   photo?: string;
   phone?: string;
   gender?: Gender;
@@ -26,5 +26,6 @@ export type UpdateUserProfile = {
   primaryAddress?: string;
   secondaryAddress?: string;
   landmark?: string;
+  birthDate?: Date;
   paymentMethods: PaymentMethod[];
 };

@@ -10,10 +10,13 @@ import userRouter from "./modules/user/user.routes";
 import brandRouter from "./modules/brand/brand.routes";
 import chatRouter from "./modules/chat/chat.routes";
 import productRouter from "./modules/product/product.routes";
+import notificationRouter from "./modules/notification/notification.routes";
+import fcmRouter from "./services/firebase/fcm/fcm.routes";
 import { notFound } from "./middlewares/notFound.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware";
 import setupSockets from "./services/socket/socket.setup";
+import env from "./config/env.config";
 
 const app = express();
 const server = createServer(app);
@@ -21,7 +24,7 @@ const server = createServer(app);
 // socket setup
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: env.BASE_URL,
     credentials: true,
   },
 });
@@ -33,11 +36,16 @@ app.use(cookieParser());
 
 app.use(cleanResponseMiddleware());
 
+app.use("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/brands", brandRouter);
 app.use("/api/v1/chats", chatRouter);
 app.use("/api/v1/products", productRouter);
+app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/fcm", fcmRouter);
 
 // 404 catcher — should come after routes
 app.use(notFound);
