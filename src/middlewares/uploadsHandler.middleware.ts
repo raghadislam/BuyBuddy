@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import AppError from "../utils/APIError";
 import Uploader from "../utils/cloudinary";
+import Logger from "../config/logger.config";
 
 interface CloudinaryUploadResult {
   secure_url: string;
@@ -53,7 +54,7 @@ export const handlePhotoUpload = async (
 
     next();
   } catch (err) {
-    console.error(err);
+    Logger.error(err);
     next(new AppError("Failed to upload photo to Cloudinary", 500));
   }
 };

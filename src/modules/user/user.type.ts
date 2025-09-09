@@ -19,6 +19,7 @@ export type User = {
 export type UpdateUserProfile = {
   userName: string;
   photo?: string;
+  photoPublicId?: string;
   phone?: string;
   gender?: Gender;
   government?: string;

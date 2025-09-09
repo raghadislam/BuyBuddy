@@ -45,5 +45,6 @@ export const updateUserProfileZodSchema = z.object({
 
       government: z.string().min(1, "Government cannot be empty").optional(),
     })
-    .strict(),
+    .strict()
+    .default({}),
 });
