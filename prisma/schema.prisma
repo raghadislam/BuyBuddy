@@ -150,10 +150,24 @@ model Account {
   privateMessageVisibilities PrivateMessageVisibility[]
   Notification               Notification[]
   NotificationRecipient      NotificationRecipient[]
+  deviceTokens               DeviceToken[]
 
   @@unique([provider, providerId])
   @@index([status])
   @@index([role])
+}
+
+model DeviceToken {
+  id         String   @id @default(uuid())
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId  String
+  token      String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isActive   Boolean  @default(true)
+  lastSeenAt DateTime @default(now())
+
+  @@index([accountId])
 }
 
 model User {
@@ -200,7 +214,7 @@ model Brand {
   status          BrandStatus     @default(DRAFT)
   instagramUrl    String?
   tiktokUrl       String?
-  bussinessPhone  String?
+  businessPhone   String?
   ownerName       String?
   ownerNationalId String?
   ownerPhone      String?
