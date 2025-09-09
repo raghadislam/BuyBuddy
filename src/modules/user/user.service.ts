@@ -14,6 +14,7 @@ class UserService {
       secondaryAddress,
       landmark,
       paymentMethods,
+      birthDate,
       ...userFields
     } = payload;
 
@@ -24,6 +25,7 @@ class UserService {
         },
         data: {
           ...userFields,
+          birthDate: birthDate ? new Date(birthDate) : null,
           ...(paymentMethods !== undefined && {
             paymentMethods: { set: paymentMethods },
           }),

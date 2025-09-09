@@ -34,6 +34,16 @@ export const updateUserProfileZodSchema = z.object({
       landmark: z.string().min(1, "Landmark cannot be empty").optional(),
 
       paymentMethods: z.array(z.nativeEnum(PaymentMethod)).optional(),
+
+      birthDate: z
+        .string()
+        .refine((date) => !date || !Number.isNaN(Date.parse(date)), {
+          message:
+            "Date of birth must be a valid date string (ISO 8601 recommended)",
+        })
+        .optional(),
+
+      government: z.string().min(1, "Government cannot be empty").optional(),
     })
     .strict(),
 });
