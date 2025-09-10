@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import cartService from "./cart.service";
-import { GetCartPayload } from "./cart.type";
+import { GetCartPayload, AddItemPayload } from "./cart.type";
 import { sendResponse } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 
@@ -19,5 +19,21 @@ export const getCart: RequestHandler = async (req, res, next) => {
     data: {
       cart,
     },
+  });
+};
+
+export const addItem: RequestHandler = async (req, res, next) => {
+  const payload: AddItemPayload = {
+    userId: req.account?.user?.id!,
+    variantId: req.body.variantId,
+    qty: req.body.qty,
+  };
+
+  const data = await cartService.addItem(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Item added to cart successfully.",
+    data,
   });
 };

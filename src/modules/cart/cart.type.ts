@@ -31,3 +31,9 @@ export type GetOrCreateCartPayload = {
 };
 
 export type GetCartPayload = GetOrCreateCartPayload;
+
+export type AddItemPayload = {
+  userId: string;
+  variantId: string;
+  qty: number;
+};
