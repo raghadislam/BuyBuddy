@@ -1,6 +1,12 @@
 import express from "express";
 
-import { getCart, addItem, updateItem, removeItem } from "./cart.controller";
+import {
+  getCart,
+  addItem,
+  updateItem,
+  removeItem,
+  clearCart,
+} from "./cart.controller";
 import { authenticate } from "../../middlewares/authenticate.middleware";
 import restrictTo from "../../middlewares/restrictTo.middleware";
 import { Role } from "@prisma/client";
@@ -38,5 +44,7 @@ router.delete(
   validate(removeItemZodSchema),
   removeItem
 );
+
+router.delete("/me", authenticate, restrictTo(Role.USER), clearCart);
 
 export default router;

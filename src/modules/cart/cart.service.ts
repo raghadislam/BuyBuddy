@@ -9,6 +9,7 @@ import {
   AddItemPayload,
   UpdateItemPayload,
   RemoveItemPayload,
+  ClearCartPayload,
 } from "./cart.type";
 import { cartSelect } from "./cart.select";
 
@@ -188,11 +189,28 @@ class CartService {
   }
 
   async removeItem(payload: RemoveItemPayload) {
-    const data = await this.updateItem({ ...payload, qty: 0 });
+    await this.updateItem({ ...payload, qty: 0 });
     logger.info(
       `Removed item from cart: userId=${payload.userId}, variantId=${payload.variantId}`
     );
-    return data;
+  }
+
+  async clearCart(payload: ClearCartPayload) {
+    const { userId } = payload;
+    try {
+      const data = await prisma.cart.delete({
+        where: { userId },
+        select: { id: true },
+      });
+
+      logger.info(`Cleared cart for user ${userId}`);
+      return data;
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new APIError("Cart not found", HttpStatus.NotFound);
+      }
+      throw error;
+    }
   }
 }
 

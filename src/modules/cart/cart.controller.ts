@@ -5,6 +5,7 @@ import {
   AddItemPayload,
   UpdateItemPayload,
   RemoveItemPayload,
+  ClearCartPayload,
 } from "./cart.type";
 import { sendResponse } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
@@ -37,7 +38,7 @@ export const addItem: RequestHandler = async (req, res, next) => {
   const data = await cartService.addItem(payload);
 
   sendResponse(res, {
-    statusCode: HttpStatus.OK,
+    statusCode: HttpStatus.Created,
     message: "Item added to cart successfully.",
     data,
   });
@@ -68,8 +69,20 @@ export const removeItem: RequestHandler = async (req, res, next) => {
   const data = await cartService.removeItem(payload);
 
   sendResponse(res, {
-    statusCode: HttpStatus.OK,
+    statusCode: HttpStatus.NoContent,
     message: "Item removed from cart successfully.",
-    data,
+  });
+};
+
+export const clearCart: RequestHandler = async (req, res, next) => {
+  const payload: ClearCartPayload = {
+    userId: req.account?.user?.id!,
+  };
+
+  await cartService.clearCart(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.NoContent,
+    message: "Cart cleared successfully.",
   });
 };

@@ -1,5 +1,6 @@
 import { Variant } from "@prisma/client";
 import { User } from "../user/user.type";
+import e from "express";
 
 export type Cart = {
   id: string;
@@ -43,4 +44,8 @@ export type UpdateItemPayload = AddItemPayload;
 export type RemoveItemPayload = {
   userId: string;
   variantId: string;
+};
+
+export type ClearCartPayload = {
+  userId: string;
 };
