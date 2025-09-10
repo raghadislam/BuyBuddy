@@ -20,6 +20,14 @@ async function calcProductRating(productId: string) {
     _avg: { rating: true },
     _count: { rating: true },
   });
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      avgRating: new Prisma.Decimal(agg._avg.rating ?? 0),
+      ratingsCount: agg._count.rating,
+    },
+  });
 }
 
 class ReviewService implements ReviewServices {
@@ -112,9 +120,10 @@ class ReviewService implements ReviewServices {
         include: { images: true },
       });
 
-      await calcProductRating(review.productId);
       return r;
     });
+
+    await calcProductRating(review.productId);
 
     return updated;
   }
@@ -124,10 +133,8 @@ class ReviewService implements ReviewServices {
       where: { id: reviewId },
     });
     if (!review) throw new APIError("Review not found.", HttpStatus.NotFound);
-    await prisma.$transaction(async (tx) => {
-      await tx.review.delete({ where: { id: reviewId } });
-      await calcProductRating(review.productId);
-    });
+    await prisma.review.delete({ where: { id: reviewId } });
+    await calcProductRating(review.productId);
   }
 
   async getProductReviews(productId: string, params: ListReviewsQuery) {
@@ -161,6 +168,11 @@ class ReviewService implements ReviewServices {
   }
 
   async voteReview(reviewId: string, userId: string, type: VoteType) {
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+    });
+    if (!review) throw new APIError("Review not found.", HttpStatus.NotFound);
+
     return prisma.$transaction(async (tx) => {
       await tx.reviewVote.upsert({
         where: { reviewId_userId: { reviewId, userId } },

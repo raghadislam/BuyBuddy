@@ -68,7 +68,7 @@ export const assertReviewOwnership: RequestHandler = async (
       .status(HttpStatus.NotFound)
       .json({ message: "Review not found" });
 
-  if (review.userId !== account.id) {
+  if (review.userId !== account?.user?.id) {
     return res
       .status(HttpStatus.Forbidden)
       .json({ message: "Forbidden! You are not the reviewer account." });

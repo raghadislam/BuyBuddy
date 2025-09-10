@@ -174,8 +174,9 @@ model User {
   accountId      String          @unique
   account        Account         @relation(fields: [accountId], references: [id])
   userName       String          @unique
-  photo          String?
+  photo          String?         @default("https://res.cloudinary.com/dbmr1movf/image/upload/v1757365829/default_j4wib4.jpg")
   phone          String?
+  photoPublicId  String?
   gender         Gender?
   birthDate      DateTime?
   createdAt      DateTime        @default(now())

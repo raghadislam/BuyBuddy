@@ -69,6 +69,14 @@ export default z
 
     JWT_COOKIE_EXPIRES_IN: z.coerce.number(),
 
+    CLOUDINARY_CLOUD_NAME: z
+      .string()
+      .min(1, "CLOUDINARY_CLOUD_NAME is required"),
+    CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
+    CLOUDINARY_API_SECRET: z
+      .string()
+      .min(1, "CLOUDINARY_API_SECRET is required"),
+
     APP_NAME: z.string().min(1, `PP_NAME is required`),
 
     // Firebase
