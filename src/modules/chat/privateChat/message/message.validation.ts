@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ContentType, ReactionType } from "../../../../generated/prisma";
+import { ContentType, ReactionType } from "@prisma/client";
 import { MatchType } from "../../../../enums/matchType.enum";
 
 export const getPrivateMessagesZodSchema = z.object({

@@ -1,4 +1,4 @@
-import { Role, Status, Provider, Category } from "../../generated/prisma";
+import { Role, Status, Provider, Category } from "@prisma/client";
 import { Brand } from "../brand/brand.type";
 import { User } from "../user/user.type";
 

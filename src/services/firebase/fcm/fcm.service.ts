@@ -16,7 +16,7 @@ import fcm from "../firbase.setup";
 
 class FcmService {
   private async sendToTokens(payload: SendToTokensPayload) {
-    const { tokens, title, body, data } = payload;
+    const { tokens, title, body } = payload;
     const limit = pLimit(10);
 
     const results = await Promise.all(
@@ -26,7 +26,6 @@ class FcmService {
             await fcm.send({
               token,
               notification: { title, body },
-              data,
             });
             return { success: 1, failure: 0 };
           } catch (error) {
@@ -136,7 +135,7 @@ class FcmService {
   }
 
   async sendToAccount(payload: SendToAccountPayload) {
-    const { accountId, title, body, data } = payload;
+    const { accountId, title, body } = payload;
 
     const tokens = await prisma.deviceToken.findMany({
       where: {
@@ -156,20 +155,18 @@ class FcmService {
     const sendPayload: SendToTokensPayload = {
       title,
       body,
-      data,
       tokens: tokens.map((t) => t.token),
     };
     return this.sendToTokens(sendPayload);
   }
 
   async sendToTopic(payload: SendToTopicPayload) {
-    const { topic, title, body, data } = payload;
+    const { topic, title, body } = payload;
 
     try {
       const result = await fcm.send({
         topic,
         notification: { title, body },
-        data,
       });
       return { success: true, result };
     } catch (error) {

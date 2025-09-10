@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Category, ProductStatus, Prisma } from "../../generated/prisma";
+import { Category, ProductStatus, Prisma } from "@prisma/client";
 
 export const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

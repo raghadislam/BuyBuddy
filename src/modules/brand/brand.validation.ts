@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Category, PaymentMethod } from "../../generated/prisma";
+import { Category, PaymentMethod } from "@prisma/client";
 
 export const updateBrandProfileZodSchema = z.object({
   body: z

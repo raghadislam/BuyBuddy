@@ -6,7 +6,7 @@ import type {
   ReportReason,
   VoteType,
   ReviewVisibility,
-} from "../../generated/prisma";
+} from "@prisma/client";
 
 import { Page } from "../../utils/pagination";
 

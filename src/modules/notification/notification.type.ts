@@ -1,10 +1,10 @@
 import { Account } from "../auth/auth.type";
-import { NotificationType } from "../../generated/prisma";
+import { NotificationType } from "@prisma/client";
 import {
   sendNotificationSelect,
   getNotificationsSelect,
 } from "./notification.select";
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "@prisma/client";
 
 export type Notification = {
   id: string;

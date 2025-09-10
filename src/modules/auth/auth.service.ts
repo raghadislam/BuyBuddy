@@ -17,7 +17,7 @@ import {
 } from "./auth.type";
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
-import { Status, RevokedReason, Provider, Role } from "../../generated/prisma";
+import { Status, RevokedReason, Provider, Role } from "@prisma/client";
 import {
   sendVerificationCode,
   sendAccountVerifiedEmail,

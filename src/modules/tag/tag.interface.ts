@@ -1,5 +1,4 @@
-import { Prisma, Tag, Product, ProductTag } from "../../generated/prisma";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Tag, Product, ProductTag } from "@prisma/client";
 import { Page } from "../../utils/pagination";
 
 interface NormalizedPage {

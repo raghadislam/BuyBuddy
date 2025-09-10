@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && cp -r src/services/email/templates/*.hbs dist/services/email/templates",
     "start": "node ./dist/server.js",
     "dev": "nodemon ./src/server.ts"
   },

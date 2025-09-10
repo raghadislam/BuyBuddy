@@ -76,7 +76,6 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
               accountId: rid,
               title: data.title,
               body: data.body,
-              data: data.data,
             });
           } catch (err) {
             logger.error("fcm:sendToAccount failed", {

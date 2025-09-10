@@ -1,6 +1,6 @@
 import slugify from "slugify";
 import prisma from "../../config/prisma.config";
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "@prisma/client";
 import { normalizePage } from "../../utils/pagination";
 import { productCardSelect, productDetailSelect } from "./product.select";
 

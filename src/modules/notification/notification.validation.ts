@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NotificationType } from "../../generated/prisma";
+import { NotificationType } from "@prisma/client";
 
 export const notificationPayload = z.object({
   type: z.nativeEnum(NotificationType, {
