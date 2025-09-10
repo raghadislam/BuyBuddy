@@ -11,6 +11,7 @@ import brandRouter from "./modules/brand/brand.routes";
 import chatRouter from "./modules/chat/chat.routes";
 import productRouter from "./modules/product/product.routes";
 import notificationRouter from "./modules/notification/notification.routes";
+import cartRouter from "./modules/cart/cart.routes";
 import fcmRouter from "./services/firebase/fcm/fcm.routes";
 import { notFound } from "./middlewares/notFound.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -46,6 +47,7 @@ app.use("/api/v1/chats", chatRouter);
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/fcm", fcmRouter);
+app.use("/api/v1/carts", cartRouter);
 
 // 404 catcher — should come after routes
 app.use(notFound);
