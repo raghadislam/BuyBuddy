@@ -1,6 +1,11 @@
 import { RequestHandler } from "express";
 import cartService from "./cart.service";
-import { GetCartPayload, AddItemPayload, UpdateItemPayload } from "./cart.type";
+import {
+  GetCartPayload,
+  AddItemPayload,
+  UpdateItemPayload,
+  RemoveItemPayload,
+} from "./cart.type";
 import { sendResponse } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 
@@ -50,6 +55,21 @@ export const updateItem: RequestHandler = async (req, res, next) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     message: "Item updated in cart successfully.",
+    data,
+  });
+};
+
+export const removeItem: RequestHandler = async (req, res, next) => {
+  const payload: RemoveItemPayload = {
+    userId: req.account?.user?.id!,
+    variantId: req.params.variantId,
+  };
+
+  const data = await cartService.removeItem(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Item removed from cart successfully.",
     data,
   });
 };

@@ -1,11 +1,15 @@
 import express from "express";
 
-import { getCart, addItem, updateItem } from "./cart.controller";
+import { getCart, addItem, updateItem, removeItem } from "./cart.controller";
 import { authenticate } from "../../middlewares/authenticate.middleware";
 import restrictTo from "../../middlewares/restrictTo.middleware";
 import { Role } from "@prisma/client";
 import { validate } from "../../middlewares/validation.middleware";
-import { addItemZodSchema, updateItemZodSchema } from "./cart.validation";
+import {
+  addItemZodSchema,
+  updateItemZodSchema,
+  removeItemZodSchema,
+} from "./cart.validation";
 
 const router = express.Router();
 
@@ -26,4 +30,13 @@ router.patch(
   validate(updateItemZodSchema),
   updateItem
 );
+
+router.delete(
+  "/items/:variantId",
+  authenticate,
+  restrictTo(Role.USER),
+  validate(removeItemZodSchema),
+  removeItem
+);
+
 export default router;

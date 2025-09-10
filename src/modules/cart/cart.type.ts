@@ -39,3 +39,8 @@ export type AddItemPayload = {
 };
 
 export type UpdateItemPayload = AddItemPayload;
+
+export type RemoveItemPayload = {
+  userId: string;
+  variantId: string;
+};

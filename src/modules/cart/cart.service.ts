@@ -8,6 +8,7 @@ import {
   GetOrCreateCartPayload,
   AddItemPayload,
   UpdateItemPayload,
+  RemoveItemPayload,
 } from "./cart.type";
 import { cartSelect } from "./cart.select";
 
@@ -184,6 +185,14 @@ class CartService {
       );
       return { cart: { ...updatedCart, ...totals } };
     });
+  }
+
+  async removeItem(payload: RemoveItemPayload) {
+    const data = await this.updateItem({ ...payload, qty: 0 });
+    logger.info(
+      `Removed item from cart: userId=${payload.userId}, variantId=${payload.variantId}`
+    );
+    return data;
   }
 }
 
