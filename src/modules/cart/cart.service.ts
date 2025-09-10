@@ -7,6 +7,7 @@ import {
   GetCartPayload,
   GetOrCreateCartPayload,
   AddItemPayload,
+  UpdateItemPayload,
 } from "./cart.type";
 import { cartSelect } from "./cart.select";
 
@@ -118,6 +119,68 @@ class CartService {
 
       logger.info(
         `Added item to cart: userId=${userId}, variantId=${variantId}, qty=${qty}`
+      );
+      return { cart: { ...updatedCart, ...totals } };
+    });
+  }
+
+  async updateItem(payload: UpdateItemPayload) {
+    const { userId, variantId, qty } = payload;
+    return prisma.$transaction(async (tx) => {
+      const variant = await tx.variant.findUnique({
+        where: { id: variantId },
+        select: { price: true, stock: true },
+      });
+
+      if (!variant) {
+        throw new APIError("Variant not found", HttpStatus.NotFound);
+      }
+
+      let cart = await tx.cart.findUnique({
+        where: { userId },
+        select: { id: true },
+      });
+      if (!cart) {
+        cart = await tx.cart.create({
+          data: { userId },
+          select: { id: true },
+        });
+      }
+
+      const existingItem = await tx.cartItem.findUnique({
+        where: { cartId_variantId: { cartId: cart.id, variantId } },
+      });
+
+      if (!existingItem) {
+        throw new APIError("Item not found in cart", HttpStatus.NotFound);
+      }
+
+      if (qty > variant.stock) {
+        throw new APIError(
+          "Insufficient stock for requested quantity",
+          HttpStatus.BadRequest
+        );
+      }
+
+      if (qty == 0) {
+        await tx.cartItem.delete({
+          where: { id: existingItem.id },
+        });
+      } else {
+        await tx.cartItem.update({
+          where: { id: existingItem.id },
+          data: { qty },
+        });
+      }
+
+      const updatedCart = await tx.cart.findUnique({
+        where: { id: cart.id },
+        select: cartSelect,
+      });
+      const totals = await this.computeTotals({ cart: updatedCart! });
+
+      logger.info(
+        `Updated item in cart: userId=${userId}, variantId=${variantId}, qty=${qty}`
       );
       return { cart: { ...updatedCart, ...totals } };
     });

@@ -37,3 +37,5 @@ export type AddItemPayload = {
   variantId: string;
   qty: number;
 };
+
+export type UpdateItemPayload = AddItemPayload;
