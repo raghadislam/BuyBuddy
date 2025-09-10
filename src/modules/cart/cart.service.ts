@@ -10,6 +10,7 @@ import {
   UpdateItemPayload,
   RemoveItemPayload,
   ClearCartPayload,
+  PreflightCheckoutPayload,
 } from "./cart.type";
 import { cartSelect } from "./cart.select";
 
@@ -198,19 +199,51 @@ class CartService {
   async clearCart(payload: ClearCartPayload) {
     const { userId } = payload;
     try {
-      const data = await prisma.cart.delete({
+      await prisma.cart.delete({
         where: { userId },
         select: { id: true },
       });
 
       logger.info(`Cleared cart for user ${userId}`);
-      return data;
     } catch (error: any) {
       if (error.code === "P2025") {
         throw new APIError("Cart not found", HttpStatus.NotFound);
       }
       throw error;
     }
+  }
+
+  async preflightCheckout(payload: PreflightCheckoutPayload) {
+    const { userId } = payload;
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      select: cartSelect,
+    });
+
+    if (!cart || (cart.items && cart.items.length === 0)) {
+      throw new APIError("Cart is empty", HttpStatus.BadRequest);
+    }
+
+    const outOfStockItems = [];
+    for (const item of cart.items || []) {
+      const variant = await prisma.variant.findUnique({
+        where: { id: item.variantId },
+        select: { stock: true },
+      });
+      if (!variant || item.qty > variant.stock) {
+        outOfStockItems.push(item.variantId);
+      }
+    }
+
+    if (outOfStockItems.length > 0) {
+      throw new APIError(
+        `Some items are out of stock: ${outOfStockItems.join(", ")}`,
+        HttpStatus.BadRequest
+      );
+    }
+
+    logger.info(`Preflight checkout successful for user ${userId}`);
+    return { message: "Preflight checkout successful" };
   }
 }
 

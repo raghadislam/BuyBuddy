@@ -6,6 +6,7 @@ import {
   updateItem,
   removeItem,
   clearCart,
+  preflightCheckout,
 } from "./cart.controller";
 import { authenticate } from "../../middlewares/authenticate.middleware";
 import restrictTo from "../../middlewares/restrictTo.middleware";
@@ -19,7 +20,7 @@ import {
 
 const router = express.Router();
 
-router.post("/me", authenticate, restrictTo(Role.USER), getCart);
+router.get("/", authenticate, restrictTo(Role.USER), getCart);
 
 router.post(
   "/items/:variantId",
@@ -45,6 +46,12 @@ router.delete(
   removeItem
 );
 
-router.delete("/me", authenticate, restrictTo(Role.USER), clearCart);
+router.delete("/", authenticate, restrictTo(Role.USER), clearCart);
 
+router.post(
+  "/checkout/preview",
+  authenticate,
+  restrictTo(Role.USER),
+  preflightCheckout
+);
 export default router;

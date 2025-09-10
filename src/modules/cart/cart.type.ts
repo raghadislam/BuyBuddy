@@ -49,3 +49,7 @@ export type RemoveItemPayload = {
 export type ClearCartPayload = {
   userId: string;
 };
+
+export type PreflightCheckoutPayload = {
+  userId: string;
+};

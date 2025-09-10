@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import e, { RequestHandler } from "express";
 import cartService from "./cart.service";
 import {
   GetCartPayload,
@@ -6,6 +6,7 @@ import {
   UpdateItemPayload,
   RemoveItemPayload,
   ClearCartPayload,
+  PreflightCheckoutPayload,
 } from "./cart.type";
 import { sendResponse } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
@@ -84,5 +85,18 @@ export const clearCart: RequestHandler = async (req, res, next) => {
   sendResponse(res, {
     statusCode: HttpStatus.NoContent,
     message: "Cart cleared successfully.",
+  });
+};
+
+export const preflightCheckout: RequestHandler = async (req, res, next) => {
+  const payload: PreflightCheckoutPayload = {
+    userId: req.account?.user?.id!,
+  };
+
+  await cartService.preflightCheckout(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.NoContent,
+    message: "Preflight checkout successful.",
   });
 };
