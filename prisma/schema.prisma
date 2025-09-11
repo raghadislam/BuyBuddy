@@ -252,7 +252,8 @@ model Brand {
   accountId       String          @unique
   account         Account         @relation(fields: [accountId], references: [id])
   description     String?
-  logo            String?
+  logo            String?         @default("https://res.cloudinary.com/dbmr1movf/image/upload/v1757365829/default_j4wib4.jpg")
+  photoPublicId   String?
   categories      Category[]
   status          BrandStatus     @default(DRAFT)
   instagramUrl    String?
