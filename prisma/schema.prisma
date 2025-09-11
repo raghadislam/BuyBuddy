@@ -370,7 +370,7 @@ model Product {
   attributes   Json?
   status       ProductStatus @default(DRAFT)
   material     String?
-  avgRating    Decimal       @default(0) @db.Decimal(12, 2)
+  avgRating    Float         @default(0)
   ratingsCount Int           @default(0)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -533,7 +533,7 @@ model Review {
   id           String           @id @default(uuid())
   productId    String
   userId       String
-  rating       Decimal          @default(0) @db.Decimal(12, 2)
+  rating       Float            @default(0)
   title        String
   content      String
   isVerified   Boolean          @default(false)
