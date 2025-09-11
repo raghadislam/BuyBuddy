@@ -7,6 +7,7 @@ import {
   reportSchema,
   updateReviewSchema,
   voteSchema,
+  replySchema,
 } from "./review.validation";
 
 import { assertReviewOwnership } from "../../middlewares/assertOwnership.middleware";
@@ -46,7 +47,12 @@ router.post(
   reportReview
 );
 
-router.post("/:reviewId/replies", authenticate, replyToReview);
+router.post(
+  "/:reviewId/replies",
+  authenticate,
+  validate(replySchema),
+  replyToReview
+);
 router.patch("/:reviewId/visibility", authenticate, setReviewVisibility);
 
 export default router;

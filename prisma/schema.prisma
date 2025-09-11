@@ -125,6 +125,46 @@ enum NotificationType {
   OTHER
 }
 
+enum OrderStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  FULFILLING
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  REQUIRES_ACTION
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  REFUNDED
+}
+
+enum ShipmentStatus {
+  PENDING
+  PACKING
+  IN_TRANSIT
+  DELIVERED
+  CANCELED
+  RETURNED
+}
+
+enum Currency {
+  EGP
+  USD
+  EUR
+  SAR
+  AED
+  QAR
+  KWD
+  BHD
+}
+
 model Account {
   id                         String                           @id @default(uuid())
   name                       String
@@ -174,9 +214,11 @@ model User {
   accountId      String          @unique
   account        Account         @relation(fields: [accountId], references: [id])
   userName       String          @unique
-  photo          String?
+  photo          String?         @default("https://res.cloudinary.com/dbmr1movf/image/upload/v1757365829/default_j4wib4.jpg")
   phone          String?
+  photoPublicId  String?
   gender         Gender?
+  cart           Cart?
   birthDate      DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -186,6 +228,7 @@ model User {
   reviewVotes    ReviewVote[]
   reviewReports  ReviewReport[]
   reviewReplays  ReviewReply[]
+  orders         Order[]
 }
 
 model Address {
@@ -221,6 +264,7 @@ model Brand {
   taxId           String?
   paymentMethods  PaymentMethod[]
   Products        Product[]
+  orders          SubOrder[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -278,6 +322,7 @@ model PrivateMessage {
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
   deletedAt      DateTime?
+  isDelivered    Boolean                    @default(false)
   attachments    PrivateMessageAttachment[]
   reactionType   ReactionType?
   reactedById    String?
@@ -301,15 +346,16 @@ model PrivateMessageAttachment {
 }
 
 model PrivateMessageVisibility {
-  id        String         @id @default(uuid())
-  message   PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  messageId String
-  account   Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  accountId String
-  readAt    DateTime?
-  deletedAt DateTime?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id          String         @id @default(uuid())
+  message     PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId   String
+  account     Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId   String
+  readAt      DateTime?
+  deletedAt   DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@unique([messageId, accountId])
   @@index([accountId])
@@ -325,8 +371,8 @@ model Product {
   description  String?
   attributes   Json?
   status       ProductStatus @default(DRAFT)
-  material     String? // NEW: material (e.g., Cotton, Leather)
-  avgRating    Decimal       @default(0) @db.Decimal(3, 2)
+  material     String?
+  avgRating    Float         @default(0)
   ratingsCount Int           @default(0)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -410,10 +456,10 @@ model Variant {
   id         String   @id @default(uuid())
   productId  String
   sku        String
-  price      Decimal  @db.Decimal(12, 2)
-  currency   String   @db.VarChar(3)
+  price      Decimal  @default(0) @db.Decimal(12, 2)
+  currency   Currency
   stock      Int      @default(0)
-  weight     Decimal? @db.Decimal(10, 3)
+  weight     Float?
   dimensions Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -421,6 +467,9 @@ model Variant {
   product Product         @relation(fields: [productId], references: [id])
   images  VariantImage[]
   options VariantOption[]
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
 
   @@unique([productId, sku])
   @@index([productId])
@@ -486,7 +535,7 @@ model Review {
   id           String           @id @default(uuid())
   productId    String
   userId       String
-  rating       Float
+  rating       Float            @default(0)
   title        String
   content      String
   isVerified   Boolean          @default(false)
@@ -595,4 +644,114 @@ model NotificationRecipient {
   @@unique([notificationId, accountId])
   @@index([accountId, readAt])
   @@index([notificationId])
+}
+
+model Cart {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id            String   @id @default(uuid())
+  cartId        String
+  cart          Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId     String
+  variant       Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  qty           Int
+  priceSnapshot Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([cartId, variantId])
+}
+
+model Order {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemsTotal    Decimal @default(0) @db.Decimal(12, 2)
+  shippingTotal Decimal @default(0) @db.Decimal(12, 2)
+  discountTotal Decimal @default(0) @db.Decimal(12, 2)
+
+  currency      Currency
+  paymentStatus PaymentStatus
+  status        OrderStatus
+  placedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  subOrders     SubOrder[]
+  payments      Payment[]
+}
+
+model SubOrder {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  brandId String
+  brand   Brand? @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  subtotal    Decimal        @default(0) @db.Decimal(12, 2)
+  discount    Decimal        @default(0) @db.Decimal(12, 2) // optional: store how much was deducted
+  shippingFee Decimal        @default(0) @db.Decimal(12, 2)
+  status      ShipmentStatus @default(PENDING)
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  items     OrderItem[]
+  shipments Shipment[]
+
+  @@unique([orderId, brandId])
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  subOrderId    String
+  subOrder      SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  variantId     String
+  variant       Variant  @relation(fields: [variantId], references: [id])
+  qty           Int
+  priceSnapshot Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  orderId   String
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider  PaymentMethod
+  intentId  String?
+  status    PaymentStatus
+  amount    Decimal       @default(0) @db.Decimal(12, 2)
+  currency  Currency
+  meta      Json?
+  createdAt DateTime      @default(now())
+}
+
+model Shipment {
+  id           String          @id @default(uuid())
+  subOrderId   String
+  subOrder     SubOrder        @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  carrier      String?
+  trackingCode String?
+  status       ShipmentStatus  @default(PENDING)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  events       ShipmentEvent[]
+}
+
+model ShipmentEvent {
+  id         String         @id @default(uuid())
+  shipmentId String
+  shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  occurredAt DateTime
+  status     ShipmentStatus
+  location   String?
+  note       String?
 }
