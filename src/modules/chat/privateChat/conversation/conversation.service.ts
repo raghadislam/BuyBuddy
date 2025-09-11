@@ -346,7 +346,6 @@ class PrivateConverstionService {
         HttpStatus.Forbidden
       );
 
-    console.log(conversation.archivedAt);
     if (conversation.archivedAt) {
       throw new APIError(
         "This conversation is already archived",

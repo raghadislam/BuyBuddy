@@ -18,6 +18,7 @@ import { errorHandler } from "./middlewares/error.middleware";
 import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware";
 import setupSockets from "./services/socket/socket.setup";
 import env from "./config/env.config";
+import arena from "./jobs/arena";
 
 const app = express();
 const server = createServer(app);
@@ -30,6 +31,8 @@ const io = new Server(server, {
   },
 });
 setupSockets(io);
+
+app.use("/", arena);
 
 app.use(bodyParser.json());
 app.use(express.json());
