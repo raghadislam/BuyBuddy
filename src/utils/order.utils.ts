@@ -1,14 +1,55 @@
-import type { ShipmentStatus } from "@prisma/client";
+import { ShipmentStatus, OrderStatus } from "@prisma/client";
 
-export function moneySum(...nums: (number | string)[]): number {
-  return nums.reduce<number>((acc, val) => acc + Number(val), 0);
+export function deriveOrderStatus(
+  subShipmentStatuses: ShipmentStatus[]
+): OrderStatus {
+  const set = new Set(subShipmentStatuses);
+  if (set.size === 1 && set.has(ShipmentStatus.DELIVERED))
+    return OrderStatus.FULFILLED;
+
+  if (set.has(ShipmentStatus.DELIVERED)) return OrderStatus.PARTIALLY_FULFILLED;
+  if ([...set].every((s) => s === ShipmentStatus.CANCELED))
+    return OrderStatus.CANCELED;
+  if ([...set].every((s) => s === ShipmentStatus.RETURNED))
+    return OrderStatus.REFUNDED;
+
+  return OrderStatus.FULFILLING;
 }
 
-// infer order-level fulfillment based on all sub-orders' shipments
-export function deriveFulfillmentStatus(subShipmentStatuses: ShipmentStatus[]) {
-  const s = new Set(subShipmentStatuses);
-  if (s.size === 1 && s.has("DELIVERED")) return "FULFILLED" as const;
-  if (s.has("DELIVERED")) return "PARTIALLY_FULFILLED" as const;
-
-  return "FULFILLING" as const; // default while in progress
+export function round2(n: number) {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
 }
+
+export function collapseSubOrderStatus(
+  shipments: { status: ShipmentStatus }[]
+): ShipmentStatus {
+  if (!shipments.length) return ShipmentStatus.PENDING;
+
+  if (shipments.some((s) => s.status === ShipmentStatus.DELIVERED))
+    return ShipmentStatus.DELIVERED;
+  if (shipments.some((s) => s.status === ShipmentStatus.IN_TRANSIT))
+    return ShipmentStatus.IN_TRANSIT;
+  if (shipments.some((s) => s.status === ShipmentStatus.PACKING))
+    return ShipmentStatus.PACKING;
+
+  if (shipments.every((s) => s.status === ShipmentStatus.CANCELED))
+    return ShipmentStatus.CANCELED;
+  if (shipments.every((s) => s.status === ShipmentStatus.RETURNED))
+    return ShipmentStatus.RETURNED;
+
+  return ShipmentStatus.PENDING;
+}
+
+/** Allowed forward transitions */
+export const AllowedNext: Record<ShipmentStatus, ShipmentStatus[]> = {
+  PENDING: [ShipmentStatus.PACKING, ShipmentStatus.CANCELED],
+  PACKING: [ShipmentStatus.IN_TRANSIT, ShipmentStatus.CANCELED],
+  IN_TRANSIT: [
+    ShipmentStatus.DELIVERED,
+    ShipmentStatus.RETURNED,
+    ShipmentStatus.CANCELED,
+  ],
+  DELIVERED: [],
+  CANCELED: [],
+  RETURNED: [],
+};
