@@ -1,25 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient().$extends({
   result: {
-    // ---- Product ----
-    product: {
-      avgRating: {
-        needs: { avgRating: true },
-        compute(p) {
-          return p.avgRating.toNumber();
-        },
-      },
-    },
-
     // ---- Review ----
-    review: {
-      rating: {
-        needs: { rating: true },
-        compute(r) {
-          return r.rating.toNumber();
-        },
-      },
-    },
 
     // ---- Variant ----
     variant: {
