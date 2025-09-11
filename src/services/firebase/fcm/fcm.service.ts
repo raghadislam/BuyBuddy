@@ -13,6 +13,7 @@ import {
 import { HttpStatus } from "../../../enums/httpStatus.enum";
 import APIError from "../../../utils/APIError";
 import fcm from "../firbase.setup";
+import messageService from "../../../modules/chat/privateChat/message/message.service";
 
 class FcmService {
   private async sendToTokens(payload: SendToTokensPayload) {
@@ -137,27 +138,31 @@ class FcmService {
   async sendToAccount(payload: SendToAccountPayload) {
     const { accountId, title, body } = payload;
 
-    const tokens = await prisma.deviceToken.findMany({
-      where: {
-        accountId,
-        isActive: true,
-      },
-      select: { token: true },
+    return await prisma.$transaction(async (tx) => {
+      const tokens = await tx.deviceToken.findMany({
+        where: {
+          accountId,
+          isActive: true,
+        },
+        select: { token: true },
+      });
+
+      if (tokens.length === 0) {
+        throw new APIError(
+          "No active tokens found for account",
+          HttpStatus.NotFound
+        );
+      }
+
+      const sendPayload: SendToTokensPayload = {
+        title,
+        body,
+        tokens: tokens.map((t) => t.token),
+      };
+      const result = await this.sendToTokens(sendPayload);
+      await messageService.markAllMessagesDelivered({ accountId });
+      return result;
     });
-
-    if (tokens.length === 0) {
-      throw new APIError(
-        "No active tokens found for account",
-        HttpStatus.NotFound
-      );
-    }
-
-    const sendPayload: SendToTokensPayload = {
-      title,
-      body,
-      tokens: tokens.map((t) => t.token),
-    };
-    return this.sendToTokens(sendPayload);
   }
 
   async sendToTopic(payload: SendToTopicPayload) {

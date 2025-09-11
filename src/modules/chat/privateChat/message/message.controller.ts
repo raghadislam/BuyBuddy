@@ -11,6 +11,7 @@ import {
   DeleteForAllPayload,
   SearchMessagesPayload,
   GetPrivateMessages,
+  MarkAllMessagesDeliveredPayload,
 } from "./message.type";
 
 export const getMessages: RequestHandler = async (req, res, next) => {
@@ -135,5 +136,22 @@ export const searchMessages: RequestHandler = async (req, res, next) => {
     data: {
       messages,
     },
+  });
+};
+
+export const markAllMessagesDelivered: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const payload: MarkAllMessagesDeliveredPayload = {
+    accountId: req.account?.id!,
+  };
+
+  const data = await privateMessageService.markAllMessagesDelivered(payload);
+  return sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "All messages marked as delivered.",
+    data,
   });
 };

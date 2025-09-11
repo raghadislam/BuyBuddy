@@ -8,6 +8,7 @@ import { joinRoomsOnConnect } from "./utils/joinRooms.util";
 import logger from "../../config/logger.config";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import { EVENTS } from "./socket.event";
+import messageService from "../../modules/chat/privateChat/message/message.service";
 
 export default function connectionGateway(io: Server, socketRaw: Socket) {
   const socket = socketRaw as CustomSocket;
@@ -36,6 +37,14 @@ export default function connectionGateway(io: Server, socketRaw: Socket) {
     logger.error("Error joining conversation rooms", err);
     socket.emit("socketError", {
       message: "Error joining conversation rooms",
+      statusCode: HttpStatus.InternalServerError,
+    });
+  });
+
+  messageService.markAllMessagesDelivered({ accountId }).catch((err) => {
+    logger.error("Error marking messages as delivered", err);
+    socket.emit("socketError", {
+      message: "Error marking messages as delivered",
       statusCode: HttpStatus.InternalServerError,
     });
   });
