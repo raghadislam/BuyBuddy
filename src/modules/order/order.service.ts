@@ -322,7 +322,12 @@ class OrderService {
     }));
   }
 
-  async confirmRefund(userId: string, orderId: string, reason?: string) {
+  async confirmRefund(
+    userId: string,
+    orderId: string,
+    provider: PaymentMethod,
+    reason?: string
+  ) {
     return prisma.$transaction(async (tx) => {
       const order = await tx.order.findFirst({
         where: { id: orderId, userId },
@@ -361,7 +366,7 @@ class OrderService {
       await tx.payment.create({
         data: {
           orderId,
-          provider: PaymentMethod.FAWRY as unknown as PaymentMethod, // fawry default (we can change it later)
+          provider,
           status: PaymentStatus.REFUNDED,
           amount: refundAmount,
           currency: order.currency,

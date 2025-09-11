@@ -18,3 +18,11 @@ export const PaymentConfirmInput = z.object({
   }),
 });
 export type PaymentConfirmInputT = z.infer<typeof PaymentConfirmInput>;
+
+export const RefundConfirmInput = z.object({
+  body: z.object({
+    orderId: z.string().uuid(),
+    provider: z.enum(PaymentMethod).default(PaymentMethod.CASH_ON_DELIVERY),
+    reason: z.string(),
+  }),
+});

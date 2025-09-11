@@ -70,3 +70,19 @@ export async function getAllOrders(req: Request, res: Response) {
     data: orders,
   });
 }
+
+export async function confirmRefund(req: Request, res: Response) {
+  const userId = (req as any).account.user?.id as string;
+
+  const { orderId, provider, reason } = req.body;
+  const updated = await orderService.confirmRefund(
+    userId,
+    orderId,
+    provider,
+    reason
+  );
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    data: updated,
+  });
+}
