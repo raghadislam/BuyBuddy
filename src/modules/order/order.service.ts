@@ -1,4 +1,7 @@
 import prisma from "../../config/prisma.config";
+import { HttpStatus } from "../../enums/httpStatus.enum";
+import APIError from "../../utils/APIError";
+import { shippingSelect, UpdateOpts } from "./order.select";
 import {
   Prisma,
   Currency,
@@ -7,11 +10,12 @@ import {
   PaymentMethod,
   ShipmentStatus,
 } from "@prisma/client";
-import { HttpStatus } from "../../enums/httpStatus.enum";
-import APIError from "../../utils/APIError";
-import { moneySum } from "../../utils/order.utils";
-
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+import {
+  round2,
+  collapseSubOrderStatus,
+  deriveOrderStatus,
+  AllowedNext,
+} from "../../utils/order.utils";
 
 type CartWithLines = Awaited<ReturnType<OrderService["getCartForCheckout"]>>;
 
@@ -68,10 +72,10 @@ class OrderService {
   }
 
   // TODO: set later
-  private async calcTax(subTotalMinusDiscount: number): Promise<number> {
-    const rate = 0.0; // 0.14 for 14% VAT
-    return +(subTotalMinusDiscount * rate).toFixed(2);
-  }
+  // private async calcTax(subTotalMinusDiscount: number): Promise<number> {
+  //   const rate = 0.0; // 0.14 for 14% VAT
+  //   return +(subTotalMinusDiscount * rate).toFixed(2);
+  // }
 
   async checkout(
     userId: string,
@@ -105,7 +109,7 @@ class OrderService {
           itemsTotal: 0,
           discountTotal: 0,
           shippingTotal: 0,
-          currency: currency,
+          currency,
           paymentStatus: PaymentStatus.PENDING,
           status: OrderStatus.DRAFT,
           placedAt: new Date(),
@@ -124,6 +128,7 @@ class OrderService {
             0
           )
         );
+        // TODO: make promoCodes model
         const discount = await this.applyPromo(promoCode, itemsSubtotal);
         const shippingFee = await this.calcShippingFee(
           group.brandId,
@@ -175,10 +180,7 @@ class OrderService {
         include: { subOrders: { include: { items: true } } },
       });
 
-      // clear cart
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
-      // 6) create pending payment with computed amount
+      // create pending payment with computed amount
       const amount = round2(itemsTotal - discountTotal + shippingTotal);
       await tx.payment.create({
         data: {
@@ -208,6 +210,11 @@ class OrderService {
         order.itemsTotal - order.discountTotal + order.shippingTotal
       );
 
+      await tx.payment.updateMany({
+        where: { orderId, status: PaymentStatus.PENDING },
+        data: { status: PaymentStatus.CANCELED },
+      });
+
       await tx.payment.create({
         data: {
           orderId,
@@ -218,6 +225,12 @@ class OrderService {
           currency: order.currency,
         },
       });
+
+      // clear cart
+      const cart = await tx.cart.findUnique({
+        where: { userId: order.userId },
+      });
+      await tx.cartItem.deleteMany({ where: { cartId: cart?.id } });
 
       const updated = await tx.order.update({
         where: { id: orderId },
@@ -250,7 +263,10 @@ class OrderService {
         order.status === OrderStatus.FULFILLED ||
         order.status === OrderStatus.REFUNDED
       )
-        return order;
+        throw new APIError(
+          `Can't cancel! Orderd status is ${order.status}`,
+          HttpStatus.Conflict
+        );
 
       const moving = order.subOrders.some((so) =>
         so.shipments.some(
@@ -319,7 +335,75 @@ class OrderService {
       payTotal: round2(o.itemsTotal - o.discountTotal + o.shippingTotal),
     }));
   }
-  // TODO: addd a function to update shipment status per sub order and order
+
+  async updateShipmentStatus(
+    shipmentId: string,
+    next: ShipmentStatus,
+    opts: UpdateOpts = {}
+  ) {
+    return prisma.$transaction(async (tx) => {
+      // 1) Load current shipment + order context
+      const current = await tx.shipment.findUnique({
+        where: { id: shipmentId },
+        select: shippingSelect,
+      });
+      if (!current)
+        throw new APIError("Shipment not found", HttpStatus.NotFound);
+
+      // 2) Validate transition
+      if (!opts.allowBackward && !AllowedNext[current.status].includes(next)) {
+        throw new APIError(
+          `Invalid transition ${current.status} -> ${next}`,
+          HttpStatus.BadRequest
+        );
+      }
+
+      // 3) Update shipment + append ShipmentEvent
+      const updatedShipment = await tx.shipment.update({
+        where: { id: shipmentId },
+        data: { status: next },
+      });
+
+      await tx.shipmentEvent.create({
+        data: {
+          shipmentId,
+          occurredAt: new Date(),
+          status: next,
+          location: opts.location,
+          note: opts.note,
+        },
+      });
+
+      // 4) Recompute order status from all sub-orders’ shipments
+      const order = current.subOrder.order;
+
+      // replace the status for this one shipment in-memory to avoid a re-read
+      const subStatuses: ShipmentStatus[] = order.subOrders.map((so) => {
+        if (so.id === current.subOrder.id) {
+          // this sub-order includes our updated shipment; emulate new status:
+          const statuses = so.shipments.map((s) => s.status);
+          statuses.push(next); // ensure next is represented
+          return collapseSubOrderStatus(statuses.map((status) => ({ status })));
+        }
+        return collapseSubOrderStatus(so.shipments);
+      });
+
+      const newOrderStatus = deriveOrderStatus(subStatuses);
+
+      if (newOrderStatus !== order.status) {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: newOrderStatus },
+        });
+      }
+
+      return {
+        shipment: updatedShipment,
+        orderId: order.id,
+        orderStatus: newOrderStatus,
+      };
+    });
+  }
 }
 
 export default new OrderService();
