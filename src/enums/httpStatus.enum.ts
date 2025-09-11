@@ -14,4 +14,5 @@ export enum HttpStatus {
   InternalServerError = 500,
   NotImplemented = 501,
   ServiceUnavailable = 503,
+  PaymentRequiredclient = 402,
 }
