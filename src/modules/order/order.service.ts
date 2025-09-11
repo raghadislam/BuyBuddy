@@ -10,12 +10,7 @@ import {
   PaymentMethod,
   ShipmentStatus,
 } from "@prisma/client";
-import {
-  round2,
-  collapseSubOrderStatus,
-  deriveOrderStatus,
-  AllowedNext,
-} from "../../utils/order.utils";
+import { round2 } from "../../utils/math.utilites";
 
 type CartWithLines = Awaited<ReturnType<OrderService["getCartForCheckout"]>>;
 
@@ -81,8 +76,7 @@ class OrderService {
     userId: string,
     currency: Currency,
     addressId: string,
-    promoCode: string,
-    paymentMethod: PaymentMethod
+    promoCode?: string
   ) {
     const cart = await this.getCartForCheckout(userId);
     const groups = this.groupByBrand(cart);
@@ -185,7 +179,7 @@ class OrderService {
       await tx.payment.create({
         data: {
           orderId: order.id,
-          provider: paymentMethod,
+          provider: PaymentMethod.CASH_ON_DELIVERY, // set as default, change when paying
           status: PaymentStatus.PENDING,
           amount,
           currency,
@@ -334,75 +328,6 @@ class OrderService {
       ...o,
       payTotal: round2(o.itemsTotal - o.discountTotal + o.shippingTotal),
     }));
-  }
-
-  async updateShipmentStatus(
-    shipmentId: string,
-    next: ShipmentStatus,
-    opts: UpdateOpts = {}
-  ) {
-    return prisma.$transaction(async (tx) => {
-      // 1) Load current shipment + order context
-      const current = await tx.shipment.findUnique({
-        where: { id: shipmentId },
-        select: shippingSelect,
-      });
-      if (!current)
-        throw new APIError("Shipment not found", HttpStatus.NotFound);
-
-      // 2) Validate transition
-      if (!opts.allowBackward && !AllowedNext[current.status].includes(next)) {
-        throw new APIError(
-          `Invalid transition ${current.status} -> ${next}`,
-          HttpStatus.BadRequest
-        );
-      }
-
-      // 3) Update shipment + append ShipmentEvent
-      const updatedShipment = await tx.shipment.update({
-        where: { id: shipmentId },
-        data: { status: next },
-      });
-
-      await tx.shipmentEvent.create({
-        data: {
-          shipmentId,
-          occurredAt: new Date(),
-          status: next,
-          location: opts.location,
-          note: opts.note,
-        },
-      });
-
-      // 4) Recompute order status from all sub-orders’ shipments
-      const order = current.subOrder.order;
-
-      // replace the status for this one shipment in-memory to avoid a re-read
-      const subStatuses: ShipmentStatus[] = order.subOrders.map((so) => {
-        if (so.id === current.subOrder.id) {
-          // this sub-order includes our updated shipment; emulate new status:
-          const statuses = so.shipments.map((s) => s.status);
-          statuses.push(next); // ensure next is represented
-          return collapseSubOrderStatus(statuses.map((status) => ({ status })));
-        }
-        return collapseSubOrderStatus(so.shipments);
-      });
-
-      const newOrderStatus = deriveOrderStatus(subStatuses);
-
-      if (newOrderStatus !== order.status) {
-        await tx.order.update({
-          where: { id: order.id },
-          data: { status: newOrderStatus },
-        });
-      }
-
-      return {
-        shipment: updatedShipment,
-        orderId: order.id,
-        orderStatus: newOrderStatus,
-      };
-    });
   }
 }
 
