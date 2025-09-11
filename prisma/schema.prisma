@@ -322,6 +322,7 @@ model PrivateMessage {
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
   deletedAt      DateTime?
+  isDelivered    Boolean                    @default(false)
   attachments    PrivateMessageAttachment[]
   reactionType   ReactionType?
   reactedById    String?
@@ -345,15 +346,16 @@ model PrivateMessageAttachment {
 }
 
 model PrivateMessageVisibility {
-  id        String         @id @default(uuid())
-  message   PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  messageId String
-  account   Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  accountId String
-  readAt    DateTime?
-  deletedAt DateTime?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id          String         @id @default(uuid())
+  message     PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId   String
+  account     Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId   String
+  readAt      DateTime?
+  deletedAt   DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@unique([messageId, accountId])
   @@index([accountId])
@@ -454,7 +456,7 @@ model Variant {
   id         String   @id @default(uuid())
   productId  String
   sku        String
-  price      Float
+  price      Decimal  @default(0) @db.Decimal(12, 2)
   currency   Currency
   stock      Int      @default(0)
   weight     Float?
@@ -533,7 +535,7 @@ model Review {
   id           String           @id @default(uuid())
   productId    String
   userId       String
-  rating       Float
+  rating       Float            @default(0)
   title        String
   content      String
   isVerified   Boolean          @default(false)
@@ -661,7 +663,7 @@ model CartItem {
   variantId     String
   variant       Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
   qty           Int
-  priceSnapshot Float
+  priceSnapshot Decimal  @default(0) @db.Decimal(12, 2)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -673,7 +675,10 @@ model Order {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  total         Float
+  itemsTotal    Decimal @default(0) @db.Decimal(12, 2)
+  shippingTotal Decimal @default(0) @db.Decimal(12, 2)
+  discountTotal Decimal @default(0) @db.Decimal(12, 2)
+
   currency      Currency
   paymentStatus PaymentStatus
   status        OrderStatus
@@ -691,10 +696,13 @@ model SubOrder {
   brandId String
   brand   Brand? @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
-  subtotal  Float
-  status    ShipmentStatus @default(PENDING)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  subtotal    Decimal        @default(0) @db.Decimal(12, 2)
+  discount    Decimal        @default(0) @db.Decimal(12, 2) // optional: store how much was deducted
+  shippingFee Decimal        @default(0) @db.Decimal(12, 2)
+  status      ShipmentStatus @default(PENDING)
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   items     OrderItem[]
   shipments Shipment[]
 
@@ -708,7 +716,7 @@ model OrderItem {
   variantId     String
   variant       Variant  @relation(fields: [variantId], references: [id])
   qty           Int
-  priceSnapshot Float
+  priceSnapshot Decimal  @default(0) @db.Decimal(12, 2)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -717,10 +725,10 @@ model Payment {
   id        String        @id @default(uuid())
   orderId   String
   order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  provider  String
+  provider  PaymentMethod
   intentId  String?
   status    PaymentStatus
-  amount    Float
+  amount    Decimal       @default(0) @db.Decimal(12, 2)
   currency  Currency
   meta      Json?
   createdAt DateTime      @default(now())
