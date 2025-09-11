@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { VoteType, ReportReason } from "../../generated/prisma";
+import { VoteType, ReportReason } from "@prisma/client";
 
 export const createReviewSchema = z.object({
   body: z.object({

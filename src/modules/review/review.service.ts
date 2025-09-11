@@ -24,7 +24,7 @@ async function calcProductRating(productId: string) {
   await prisma.product.update({
     where: { id: productId },
     data: {
-      avgRating: new Prisma.Decimal(agg._avg.rating ?? 0),
+      avgRating: new Prisma.Decimal(agg._avg.rating ?? 0).toNumber(),
       ratingsCount: agg._count.rating,
     },
   });
@@ -82,7 +82,7 @@ class ReviewService implements ReviewServices {
       await tx.product.update({
         where: { id: productId },
         data: {
-          avgRating: new Prisma.Decimal(agg._avg.rating ?? 0),
+          avgRating: new Prisma.Decimal(agg._avg.rating ?? 0).toNumber(),
           ratingsCount: agg._count.rating,
         },
       });

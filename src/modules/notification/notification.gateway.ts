@@ -17,7 +17,7 @@ import {
   MarkNotificationReadPayload,
   SearchNotificationsPayload,
 } from "./notification.type";
-import fcmService from "../../services/firebase/fcm/fcm.service";
+import { addNotificationJob } from "../../jobs/notification/notification.job";
 
 export default function notificationGateway(io: Server, socket: CustomSocket) {
   const accountId = socket.data.accountId;
@@ -68,25 +68,22 @@ export default function notificationGateway(io: Server, socket: CustomSocket) {
         });
       }
 
-      // Send FCM for disconnected recipients.
-      await Promise.all(
-        disconnected.map(async (rid) => {
-          try {
-            await fcmService.sendToAccount({
-              accountId: rid,
-              title: data.title,
-              body: data.body,
-            });
-          } catch (err) {
-            logger.error("fcm:sendToAccount failed", {
-              err,
-              to: rid,
-              accountId,
-            });
-            throw err;
-          }
-        })
-      );
+      // Send FCM for disconnected recipients using job queue.
+      for (const rid of disconnected) {
+        try {
+          await addNotificationJob("sendToAccount", {
+            accountId: rid,
+            title: data.title,
+            body: data.body,
+          });
+        } catch (err) {
+          logger.error("Failed to queue FCM job", {
+            err,
+            to: rid,
+            accountId,
+          });
+        }
+      }
 
       ack?.({ status: "ok", data: result });
     } catch (err: any) {
