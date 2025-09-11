@@ -18,13 +18,7 @@ import {
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status, RevokedReason, Provider, Role } from "@prisma/client";
-import {
-  sendVerificationCode,
-  sendAccountVerifiedEmail,
-  sendPasswordResetCode,
-  sendPasswordResetConfirmation,
-  sendAccountActivatedEmail,
-} from "../../services/email/send";
+import { addEmailJob } from "../../jobs/email/email.job";
 import { hashPassword, comparePassword } from "../../utils/hash";
 import logger from "../../config/logger.config";
 import {
@@ -61,7 +55,9 @@ class AuthService {
       },
     });
 
-    await sendVerificationCode(email, code, {
+    await addEmailJob("verification", {
+      to: email,
+      code,
       subject,
     });
   }
@@ -84,7 +80,9 @@ class AuthService {
       },
     });
 
-    await sendPasswordResetCode(email, code, {
+    await addEmailJob("passwordReset", {
+      to: email,
+      code,
       subject,
     });
   }
@@ -324,26 +322,19 @@ class AuthService {
       jti: uuidv4(),
     });
 
-    // Send emails, but don't let it break the flow.
-    (async () => {
-      try {
-        if (existingaccount.status === Status.INACTIVE) {
-          await sendAccountActivatedEmail(account.email, {
-            subject: "Your account is now active",
-            name: account.name,
-          });
-        } else {
-          await sendAccountVerifiedEmail(account.email, {
-            subject: "Verify your email",
-            name: account.name,
-          });
-        }
-      } catch (err) {
-        logger.error(
-          `Failed to send verification email for account ${account.id}: ${err}`
-        );
-      }
-    })();
+    if (existingaccount.status === Status.INACTIVE) {
+      await addEmailJob("accountActivated", {
+        to: account.email,
+        subject: "Your account is now active",
+        name: account.name,
+      });
+    } else {
+      await addEmailJob("accountVerified", {
+        to: account.email,
+        subject: "Verify your email",
+        name: account.name,
+      });
+    }
 
     logger.info(`account verified ID: ${account.id}, name: ${account.name}`);
 
@@ -799,19 +790,11 @@ class AuthService {
       jti: uuidv4(),
     });
 
-    // Send confirmation email, but don't let it break the flow.
-    (async () => {
-      try {
-        await sendPasswordResetConfirmation(account.email, {
-          subject: "Your password has been reset successfully",
-          name: account.name,
-        });
-      } catch (err) {
-        logger.error(
-          `Failed to send password reset confirm email for account ${account.id}: ${err}`
-        );
-      }
-    })();
+    await addEmailJob("passwordResetConfirmation", {
+      to: account.email,
+      subject: "Your password has been reset successfully",
+      name: account.name,
+    });
 
     logger.info(
       `Password successfully reset for account ID: ${account.id}, email: ${account.email}`

@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc --build && cp -r src/services/email/templates/*.hbs dist/services/email/templates",
-    "start": "node ./dist/server.js",
-    "dev": "nodemon ./src/server.ts"
+    "start": "concurrently \"node ./dist/server.js\" \"node ./dist/jobs/index.js\"",
+    "dev": "concurrently \"nodemon ./src/server.ts\" \"nodemon ./src/jobs/index.ts\""
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/bull-arena": "^3.0.10",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.3",
     "@types/handlebars": "^4.1.0",
@@ -23,6 +24,7 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/socket.io": "^3.0.2",
     "@types/streamifier": "^0.1.2",
+    "concurrently": "^9.2.1",
     "nodemon": "^3.1.10",
     "prisma": "^6.15.0",
     "ts-node": "^10.9.2",
@@ -32,6 +34,8 @@
     "@prisma/client": "^6.16.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
+    "bull-arena": "^4.6.0",
+    "bullmq": "^5.58.5",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
@@ -39,6 +43,7 @@
     "express": "^5.1.0",
     "firebase-admin": "^13.5.0",
     "handlebars": "^4.7.8",
+    "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
