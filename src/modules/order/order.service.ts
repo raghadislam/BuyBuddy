@@ -194,7 +194,11 @@ class OrderService {
     });
   }
 
-  async confirmPayment(orderId: string, provider: string, intentId?: string) {
+  async confirmPayment(
+    orderId: string,
+    provider: PaymentMethod,
+    intentId?: string
+  ) {
     return prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id: orderId } });
       if (!order) throw new APIError("Order not found", HttpStatus.NotFound);
