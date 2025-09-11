@@ -2,6 +2,7 @@ import prisma from "../../config/prisma.config";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
 import {
+  Prisma,
   Currency,
   PaymentStatus,
   OrderStatus,
@@ -63,12 +64,6 @@ class OrderService {
   ): Promise<number> {
     return 40;
   }
-
-  // TODO: set later
-  // private async calcTax(subTotalMinusDiscount: number): Promise<number> {
-  //   const rate = 0.0; // 0.14 for 14% VAT
-  //   return +(subTotalMinusDiscount * rate).toFixed(2);
-  // }
 
   async checkout(
     userId: string,
@@ -177,7 +172,7 @@ class OrderService {
       await tx.payment.create({
         data: {
           orderId: order.id,
-          provider: PaymentMethod.CASH_ON_DELIVERY, // set as default, change when paying
+          provider: PaymentMethod.CASH_ON_DELIVERY, // default, change when paying
           status: PaymentStatus.PENDING,
           amount,
           currency,
@@ -218,7 +213,6 @@ class OrderService {
         },
       });
 
-      // clear cart
       const cart = await tx.cart.findUnique({
         where: { userId: order.userId },
       });
@@ -326,6 +320,75 @@ class OrderService {
       ...o,
       payTotal: round2(o.itemsTotal - o.discountTotal + o.shippingTotal),
     }));
+  }
+
+  async confirmRefund(userId: string, orderId: string, reason?: string) {
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId, userId },
+        include: {
+          subOrders: { include: { items: true, shipments: true } },
+          payments: true,
+        },
+      });
+
+      if (!order) throw new APIError("Order not found", HttpStatus.NotFound);
+
+      if (order.status === OrderStatus.REFUNDED) {
+        return order;
+      }
+      if (order.paymentStatus !== PaymentStatus.SUCCEEDED) {
+        throw new APIError(
+          "Order not paid yet; cannot refund",
+          HttpStatus.Conflict
+        );
+      }
+
+      const anyDelivered = order.subOrders.some((so) =>
+        so.shipments.some((s) => s.status === ShipmentStatus.DELIVERED)
+      );
+      if (anyDelivered) {
+        throw new APIError(
+          "At least one shipment delivered; use return flow instead of refund.",
+          HttpStatus.Conflict
+        );
+      }
+
+      // Create refund payment record
+      const refundAmount = round2(
+        order.itemsTotal - order.discountTotal + order.shippingTotal
+      );
+      await tx.payment.create({
+        data: {
+          orderId,
+          provider: PaymentMethod.FAWRY as unknown as PaymentMethod, // fawry default (we can change it later)
+          status: PaymentStatus.REFUNDED,
+          amount: refundAmount,
+          currency: order.currency,
+          note: reason,
+        } as Prisma.PaymentUncheckedCreateInput,
+      });
+
+      // Restock
+      for (const so of order.subOrders) {
+        for (const it of so.items) {
+          await tx.variant.update({
+            where: { id: it.variantId },
+            data: { stock: { increment: it.qty } },
+          });
+        }
+      }
+
+      const updated = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.REFUNDED,
+          paymentStatus: PaymentStatus.REFUNDED,
+        },
+      });
+
+      return updated;
+    });
   }
 }
 
