@@ -1,9 +1,7 @@
 import prisma from "../../config/prisma.config";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
-import { shippingSelect, UpdateOpts } from "./order.select";
 import {
-  Prisma,
   Currency,
   PaymentStatus,
   OrderStatus,

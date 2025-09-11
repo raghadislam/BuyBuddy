@@ -14,7 +14,6 @@ export const handlePhotoUpload = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  // Use type assertions for custom properties
   const files = (req as any).files as
     | { photo?: Express.Multer.File[] }
     | undefined;
@@ -22,10 +21,6 @@ export const handlePhotoUpload = async (
   let user;
   if ((req as any).account.user)
     user = (req as any).account.user as
-      | { id: string; photoPublicId?: string }
-      | undefined;
-  else
-    user = (req as any).account.brand as
       | { id: string; photoPublicId?: string }
       | undefined;
 
@@ -56,5 +51,50 @@ export const handlePhotoUpload = async (
   } catch (err) {
     Logger.error(err);
     next(new AppError("Failed to upload photo to Cloudinary", 500));
+  }
+};
+
+export const handleLogoUpload = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const files = (req as any).files as
+    | { logo?: Express.Multer.File[] }
+    | undefined;
+
+  let brand;
+  if ((req as any).account.brand)
+    brand = (req as any).account.brand as
+      | { id: string; photoPublicId?: string }
+      | undefined;
+
+  if (!files?.logo?.[0]) return next();
+
+  const file = files.logo[0];
+  const filename = `brand-${brand!.id}-${Date.now()}`;
+
+  try {
+    const resizedBuffer = await Uploader.resizeImage(file.buffer);
+
+    if (brand?.photoPublicId) {
+      await Uploader.deleteCloudinaryFile(brand.photoPublicId);
+    }
+
+    const result = (await Uploader.uploadBufferToCloudinary(resizedBuffer, {
+      folder: "logos",
+      public_id: filename,
+      resource_type: "image",
+    })) as CloudinaryUploadResult;
+
+    (req as any).uploadedLogo = {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
+
+    next();
+  } catch (err) {
+    Logger.error(err);
+    next(new AppError("Failed to upload logo to Cloudinary", 500));
   }
 };
