@@ -15,7 +15,7 @@ import {
   EmailJobPayload,
   EmailJobName,
   VerificationPayload,
-} from "../type";
+} from "./email.type";
 
 export async function emailProcessor(job: Job) {
   const name = job.name as EmailJobName;

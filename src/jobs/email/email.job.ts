@@ -1,6 +1,6 @@
 import { Job } from "bullmq";
-import { emailQueue } from "./queue";
-import { EmailJobPayload } from "./type";
+import { emailQueue } from "./email.queue";
+import { EmailJobPayload } from "./email.type";
 
 const REMOVE_CONFIG = {
   removeOnComplete: false, // 1 hour

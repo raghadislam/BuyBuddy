@@ -18,7 +18,7 @@ import {
 import prisma from "../../config/prisma.config";
 import APIError from "../../utils/APIError";
 import { Status, RevokedReason, Provider, Role } from "@prisma/client";
-import { addEmailJob } from "../../jobs/addJob";
+import { addEmailJob } from "../../jobs/email/email.job";
 import { hashPassword, comparePassword } from "../../utils/hash";
 import logger from "../../config/logger.config";
 import {

@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { emailProcessor } from "./email.processor";
-import { connection } from "../queue";
+import { connection } from "./email.queue";
 import logger from "../../config/logger.config";
 
 const concurrency = 5;

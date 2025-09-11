@@ -11,6 +11,12 @@ const arena = Arena(
         hostId: "server",
         redis: { url: env.REDIS_QUEUE_URL },
       },
+      {
+        type: "bullmq",
+        name: "notificationQ",
+        hostId: "server",
+        redis: { url: env.REDIS_QUEUE_URL },
+      },
     ],
   },
   {
