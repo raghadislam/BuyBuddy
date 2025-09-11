@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc --build && cp -r src/services/email/templates/*.hbs dist/services/email/templates",
-    "start": "concurrently \"node ./dist/server.js\" \"node ./dist/jobs/index.js\"",
-    "dev": "concurrently \"nodemon ./src/server.ts\" \"nodemon ./src/jobs/index.ts\""
+    "start": "npx concurrently \"node ./dist/server.js\" \"node ./dist/jobs/index.js\"",
+    "dev": "npx concurrently \"nodemon ./src/server.ts\" \"nodemon ./src/jobs/index.ts\""
   },
   "author": "",
   "license": "ISC",
