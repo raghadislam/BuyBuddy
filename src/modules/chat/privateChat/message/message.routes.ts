@@ -13,6 +13,7 @@ import {
   deleteMessageForAll,
   deleteMessageForMe,
   getMessages,
+  markAllMessagesDelivered,
   markMessageRead,
   reactToMessage,
   searchMessages,
@@ -62,5 +63,7 @@ router.get(
   validate(searchMessagesZodSchema),
   searchMessages
 );
+
+router.post("/mark-delivered", authenticate, markAllMessagesDelivered);
 
 export default router;

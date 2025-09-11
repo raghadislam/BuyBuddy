@@ -9,6 +9,7 @@ export type PrivateMessageVisibility = {
   accountId: string;
   readAt?: Date;
   deletedAt?: Date;
+  deliveredAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };

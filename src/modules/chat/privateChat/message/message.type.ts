@@ -61,6 +61,7 @@ export type PrivateMessage = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
+  isDelivered?: boolean;
   attachments: PrivateMessageAttachment[];
   reactionType?: ReactionType;
   reactedById?: string;
@@ -74,4 +75,8 @@ export type GetPrivateMessages = {
   limit?: number;
   cursor?: string;
   since?: Date;
+};
+
+export type MarkAllMessagesDeliveredPayload = {
+  accountId: string;
 };

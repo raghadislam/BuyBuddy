@@ -10,6 +10,7 @@ import {
   DeleteForAllPayload,
   SearchMessagesPayload,
   GetPrivateMessages,
+  MarkAllMessagesDeliveredPayload,
 } from "./message.type";
 import { MatchType } from "../../../../enums/matchType.enum";
 
@@ -193,6 +194,7 @@ class PrivateMessage {
       const visibilities = participants.map((p) => ({
         accountId: p.accountId,
         readAt: p.accountId === accountId ? new Date() : null,
+        deliveredAt: p.accountId === accountId ? new Date() : null,
       }));
 
       // create message
@@ -668,6 +670,52 @@ class PrivateMessage {
       nextCursor:
         messages.length === limit ? messages[messages.length - 1].id : null,
     };
+  }
+
+  async markAllMessagesDelivered(payload: MarkAllMessagesDeliveredPayload) {
+    const { accountId } = payload;
+    const now = new Date();
+
+    // Find all message IDs for visibilities to be updated
+    const visibilities = await prisma.privateMessageVisibility.findMany({
+      where: {
+        accountId,
+        deletedAt: null,
+        deliveredAt: null,
+      },
+      select: { messageId: true },
+    });
+
+    // Update visibilities
+    const result = await prisma.privateMessageVisibility.updateMany({
+      where: {
+        accountId,
+        deletedAt: null,
+        deliveredAt: null,
+      },
+      data: {
+        deliveredAt: now,
+      },
+    });
+
+    // Set isDelivered = true for all affected messages (not sent by this user)
+    await prisma.privateMessage.updateMany({
+      where: {
+        id: {
+          in: visibilities.map((v) => v.messageId),
+        },
+        senderId: { not: accountId },
+      },
+      data: {
+        isDelivered: true,
+      },
+    });
+
+    logger.info(
+      `Marked ${result.count} messages as delivered for account ${accountId}`
+    );
+
+    return { updatedCount: result.count, deliveredAt: now };
   }
 }
 
