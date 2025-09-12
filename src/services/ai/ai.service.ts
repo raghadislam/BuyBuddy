@@ -18,6 +18,8 @@ class AIService {
       ];
 
       //   const { query } = payload;
+      //   const formData = new FormData();
+      // formData.append("query", query);
       //   const response = await axios.post<AISearchResponse>(
       //     `${this.apiUrl}/search/text`,
       //     {
@@ -26,7 +28,7 @@ class AIService {
       //     {
       //       headers: {
       //         Authorization: `Bearer ${this.apiKey}`,
-      //         "Content-Type": "application/json",
+      //         "Content-Type": "application/form-data",
       //       },
       //       timeout: 30000,
       //     }
@@ -50,12 +52,15 @@ class AIService {
       ];
 
       //   const { image } = payload;
+      //   const formData = new FormData();
+      //   formData.append("file", image);
       //     const response = await axios.post<AISearchResponse>(
       //       `${this.apiUrl}/search/image`,
-      //       image,
+      //       formData,
       //       {
       //         headers: {
       //           Authorization: `Bearer ${this.apiKey}`,
+      //           "Content-Type": "multipart/form-data",
       //         },
       //         timeout: 60000,
       //       }
