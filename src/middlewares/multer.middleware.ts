@@ -14,12 +14,12 @@ const fileFilter = (
 
   const isImage = mimetype.startsWith("image");
 
-  if (fieldname === "photo") {
+  if (fieldname === "photo" || fieldname === "logo") {
     return isImage
       ? cb(null, true)
       : cb(
           new AppError(
-            "Only image files allowed for photo.",
+            "Only image files allowed for photo/logo.",
             HttpStatus.BadRequest
           ) as any,
           false
@@ -39,6 +39,9 @@ const upload = multer({
   storage: multerStorage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
-}).fields([{ name: "photo", maxCount: 1 }]);
+}).fields([
+  { name: "photo", maxCount: 1 },
+  { name: "logo", maxCount: 1 },
+]);
 
 export default upload;

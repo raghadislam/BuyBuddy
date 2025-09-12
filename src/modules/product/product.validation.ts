@@ -10,7 +10,7 @@ const ImageInput = z.object({
 });
 
 /* ---------------- Body Schemas ---------------- */
-export const createProductSchema = z.object({
+export const createProductZodSchema = z.object({
   body: z.object({
     brandId: z.string().uuid(),
     category: z.enum(Category),
@@ -24,7 +24,7 @@ export const createProductSchema = z.object({
   }),
 });
 
-export const updateProductSchema = z.object({
+export const updateProductZodSchema = z.object({
   body: z.object({
     category: z.enum(Category).optional(),
     title: z.string().min(3).max(140).optional(),
@@ -38,7 +38,7 @@ export const updateProductSchema = z.object({
 });
 
 /* ---------------- Query Schemas ---------------- */
-export const listProductsQuerySchema = z.object({
+export const listProductsQueryZodSchema = z.object({
   query: z.object({
     q: z.string().max(120).optional(),
     brandId: z.string().uuid().optional(),
@@ -52,43 +52,13 @@ export const listProductsQuerySchema = z.object({
   }),
 });
 
-export const tagsBrowseQuerySchema = z.object({
-  query: z.object({
-    page: z.coerce.number().int().positive().optional(),
-    limit: z.coerce.number().int().positive().max(100).optional(),
-  }),
-});
-
 /* ---------------- Param Schemas ---------------- */
-export const productIdParamSchema = z.object({
+export const productIdParamZodSchema = z.object({
   params: z.object({ productId: z.string().uuid() }),
 });
 
-export const productSlugParamSchema = z.object({
+export const productSlugParamZodSchema = z.object({
   params: z.object({ slug: z.string().regex(slugRegex) }),
-});
-
-/* ---------------- Tag Body Schemas ---------------- */
-export const attachTagBodySchema = z.object({
-  body: z.object({
-    nameOrSlug: z.string().min(1),
-    pinned: z.boolean().optional(),
-  }),
-});
-
-export const attachTagsBulkBodySchema = z.object({
-  body: z.object({
-    tags: z.array(
-      z.object({
-        nameOrSlug: z.string().min(1),
-        pinned: z.boolean().optional(),
-      })
-    ),
-  }),
-});
-
-export const togglePinnedBodySchema = z.object({
-  body: z.object({ pinned: z.boolean() }),
 });
 
 /* ---------------- Util ---------------- */

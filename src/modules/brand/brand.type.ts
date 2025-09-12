@@ -25,6 +25,7 @@ export type Brand = {
 export type UpdateBrandProfile = {
   description?: string;
   logo?: string;
+  photoPublicId: string;
   categories: Category[];
   instagramUrl?: string;
   tiktokUrl?: string;

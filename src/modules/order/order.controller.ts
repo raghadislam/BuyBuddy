@@ -5,14 +5,14 @@ import { HttpStatus } from "../../enums/httpStatus.enum";
 import APIError from "../../utils/APIError";
 
 export async function checkout(req: Request, res: Response) {
-  const userId = (req as any).user.id as string;
-  const { currency, addressId, promoCode, paymentMethod } = req.body;
+  const userId = (req as any)?.account?.user?.id as string | undefined;
+  if (!userId) throw new APIError("User not Found", HttpStatus.NotFound);
+  const { currency, addressId, promoCode } = req.body;
   const order = await orderService.checkout(
     userId,
     currency,
     addressId,
-    promoCode,
-    paymentMethod
+    promoCode
   );
   sendResponse(res, {
     statusCode: HttpStatus.Created,
@@ -22,11 +22,11 @@ export async function checkout(req: Request, res: Response) {
 
 export async function confirmPayment(req: Request, res: Response) {
   const { orderId, provider, intentId, status } = req.body;
-  if (status !== "SUCCEEDED") return;
-  sendResponse(res, {
-    statusCode: HttpStatus.PaymentRequiredclient,
-    message: "Payment not successful",
-  });
+  if (status !== "SUCCEEDED")
+    return sendResponse(res, {
+      statusCode: HttpStatus.PaymentRequiredclient,
+      message: "Payment not successful",
+    });
   const updated = await orderService.confirmPayment(
     orderId,
     provider,
@@ -68,5 +68,21 @@ export async function getAllOrders(req: Request, res: Response) {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     data: orders,
+  });
+}
+
+export async function confirmRefund(req: Request, res: Response) {
+  const userId = (req as any).account.user?.id as string;
+
+  const { orderId, provider, reason } = req.body;
+  const updated = await orderService.confirmRefund(
+    userId,
+    orderId,
+    provider,
+    reason
+  );
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    data: updated,
   });
 }

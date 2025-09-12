@@ -7,27 +7,32 @@ import {
   cancelOrder,
   getAllOrders,
   getOrder,
+  confirmRefund,
 } from "./order.controller";
-import { CheckoutInput, PaymentConfirmInput } from "./order.validation";
+import {
+  CheckoutZodSchema,
+  PaymentConfirmZodSchema,
+  RefundConfirmZodSchema,
+} from "./order.validation";
 
 const router = Router();
 
-// TODO: add assertOrderOwnership middleware
+router.post("/checkout", authenticate, validate(CheckoutZodSchema), checkout);
+router.post(
+  "/payment/confirm",
+  authenticate,
+  validate(PaymentConfirmZodSchema),
+  confirmPayment
+);
+router.post("/:orderId/cancel", authenticate, cancelOrder);
+router.get("/:orderId", authenticate, getOrder);
+router.get("/", authenticate, getAllOrders);
 
 router.post(
-  "/orders/checkout",
+  "/payment/refund",
   authenticate,
-  validate(CheckoutInput),
-  checkout
+  validate(RefundConfirmZodSchema),
+  confirmRefund
 );
-router.post(
-  "/orders/payment/confirm",
-  authenticate,
-  validate(PaymentConfirmInput),
-  confirmPayment
-); // webhook-ish
-router.post("/orders/:orderId/cancel", authenticate, cancelOrder);
-router.get("/orders/:orderId", authenticate, getOrder);
-router.get("/orders", authenticate, getAllOrders);
 
 export default router;
