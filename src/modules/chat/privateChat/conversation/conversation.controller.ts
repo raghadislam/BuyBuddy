@@ -7,6 +7,7 @@ import {
   ArchivePrivateConversation,
   UnarchivePrivateConversation,
   MarkReadPayload,
+  GetArchivedConversationsPayload,
 } from "./conversation.type";
 import privateConverstionService from "./conversation.service";
 import { sendResponse } from "../../../../utils/response";
@@ -111,5 +112,24 @@ export const markRead: RequestHandler = async (req, res, next) => {
     statusCode: HttpStatus.OK,
     message: "Private conversation messages marked as read successfully.",
     data,
+  });
+};
+
+export const getArchivedPrivateConversations: RequestHandler = async (
+  req,
+  res
+) => {
+  const payload: GetArchivedConversationsPayload = {
+    accountId: req.account?.id!,
+  };
+  const conversations =
+    await privateConverstionService.getArchivedConversations(payload);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    message: "Archived private conversations retrieved successfully.",
+    data: {
+      conversations,
+    },
   });
 };
