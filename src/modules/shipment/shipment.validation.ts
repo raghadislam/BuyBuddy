@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ShipmentStatus } from "@prisma/client";
 
-export const updateShipmentStatusSchema = z.object({
+export const updateShipmentStatusZodSchema = z.object({
   body: z.object({
     shipmentId: z.string().uuid(),
     next: z.enum(ShipmentStatus),

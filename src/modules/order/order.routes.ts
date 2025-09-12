@@ -10,18 +10,18 @@ import {
   confirmRefund,
 } from "./order.controller";
 import {
-  CheckoutInput,
-  PaymentConfirmInput,
-  RefundConfirmInput,
+  CheckoutZodSchema,
+  PaymentConfirmZodSchema,
+  RefundConfirmZodSchema,
 } from "./order.validation";
 
 const router = Router();
 
-router.post("/checkout", authenticate, validate(CheckoutInput), checkout);
+router.post("/checkout", authenticate, validate(CheckoutZodSchema), checkout);
 router.post(
   "/payment/confirm",
   authenticate,
-  validate(PaymentConfirmInput),
+  validate(PaymentConfirmZodSchema),
   confirmPayment
 );
 router.post("/:orderId/cancel", authenticate, cancelOrder);
@@ -31,7 +31,7 @@ router.get("/", authenticate, getAllOrders);
 router.post(
   "/payment/refund",
   authenticate,
-  validate(RefundConfirmInput),
+  validate(RefundConfirmZodSchema),
   confirmRefund
 );
 
