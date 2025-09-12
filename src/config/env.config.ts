@@ -99,5 +99,8 @@ export default z
         }
       })
       .pipe(z.array(z.string().url("Each ALLOWED_ORIGIN must be a valid URL"))),
+
+    AI_SEARCH_API_URL: z.string().url(),
+    AI_SEARCH_API_KEY: z.string(),
   })
   .parse(process.env);

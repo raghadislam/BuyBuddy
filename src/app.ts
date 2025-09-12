@@ -16,6 +16,7 @@ import cartRouter from "./modules/cart/cart.routes";
 import fcmRouter from "./services/firebase/fcm/fcm.routes";
 import orderRouter from "./modules/order/order.routes";
 import shipmentRouter from "./modules/shipment/shipment.routes";
+import searchRouter from "./modules/search/search.route";
 import { notFound } from "./middlewares/notFound.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
 import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware";
@@ -80,6 +81,7 @@ app.use("/api/v1/fcm", fcmRouter);
 app.use("/api/v1/carts", cartRouter);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/shipments", shipmentRouter);
+app.use("/api/v1/search", searchRouter);
 
 // 404 catcher — should come after routes
 app.use(notFound);
