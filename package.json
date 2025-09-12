@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc --build && cp -r src/services/email/templates/*.hbs dist/services/email/templates",
-    "start": "concurrently \"node ./dist/server.js\" \"node ./dist/jobs/index.js\"",
-    "dev": "concurrently \"nodemon ./src/server.ts\" \"nodemon ./src/jobs/index.ts\""
+    "start": "npx concurrently \"node ./dist/server.js\" \"node ./dist/jobs/index.js\"",
+    "dev": "npx concurrently \"nodemon ./src/server.ts\" \"nodemon ./src/jobs/index.ts\""
   },
   "author": "",
   "license": "ISC",
@@ -24,7 +24,6 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/socket.io": "^3.0.2",
     "@types/streamifier": "^0.1.2",
-    "concurrently": "^9.2.1",
     "nodemon": "^3.1.10",
     "prisma": "^6.15.0",
     "ts-node": "^10.9.2",
@@ -37,6 +36,7 @@
     "bull-arena": "^4.6.0",
     "bullmq": "^5.58.5",
     "cloudinary": "^2.7.0",
+    "concurrently": "^9.2.1",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.1",

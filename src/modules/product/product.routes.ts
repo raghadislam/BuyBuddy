@@ -8,15 +8,18 @@ import {
 } from "../../middlewares/assertOwnership.middleware";
 
 import {
-  createProductSchema,
-  updateProductSchema,
-  listProductsQuerySchema,
-  productIdParamSchema,
-  productSlugParamSchema,
-  tagsBrowseQuerySchema,
-  attachTagBodySchema,
-  attachTagsBulkBodySchema,
+  createProductZodSchema,
+  updateProductZodSchema,
+  listProductsQueryZodSchema,
+  productIdParamZodSchema,
+  productSlugParamZodSchema,
 } from "./product.validation";
+
+import {
+  tagsBrowseQueryZodSchema,
+  attachTagBodyZodSchema,
+  attachTagsBulkBodyZodSchema,
+} from "../tag/tag.validation";
 
 import {
   getAllProducts,
@@ -46,17 +49,21 @@ const router = Router();
 
 router.use("/:productId/reviews", reviewRouter);
 
-router.get("/tags", validate(tagsBrowseQuerySchema), getAllTags);
+router.get("/tags", validate(tagsBrowseQueryZodSchema), getAllTags);
 router.get("/tags/:tagSlug/products", getProductsByTagSlug);
 
-router.get("/", validate(listProductsQuerySchema), getAllProducts);
-router.get("/slug/:slug", validate(productSlugParamSchema), getProductBySlug);
-router.get("/:productId", validate(productIdParamSchema), getProductById);
+router.get("/", validate(listProductsQueryZodSchema), getAllProducts);
+router.get(
+  "/slug/:slug",
+  validate(productSlugParamZodSchema),
+  getProductBySlug
+);
+router.get("/:productId", validate(productIdParamZodSchema), getProductById);
 
 router.post(
   "/",
   authenticate,
-  validate(createProductSchema),
+  validate(createProductZodSchema),
   assertBrandOwnership,
   createProduct
 );
@@ -64,15 +71,15 @@ router.patch(
   "/:productId",
   authenticate,
   assertProductOwnership,
-  validate(productIdParamSchema),
-  validate(updateProductSchema),
+  validate(productIdParamZodSchema),
+  validate(updateProductZodSchema),
   updateProduct
 );
 router.delete(
   "/:productId",
   authenticate,
   assertProductOwnership,
-  validate(productIdParamSchema),
+  validate(productIdParamZodSchema),
   deleteProduct
 );
 
@@ -80,21 +87,21 @@ router.post(
   "/:productId/publish",
   authenticate,
   assertProductOwnership,
-  validate(productIdParamSchema),
+  validate(productIdParamZodSchema),
   publishProduct
 );
 router.post(
   "/:productId/unpublish",
   authenticate,
   assertProductOwnership,
-  validate(productIdParamSchema),
+  validate(productIdParamZodSchema),
   unpublishProduct
 );
 router.post(
   "/:productId/archive",
   authenticate,
   assertProductOwnership,
-  validate(productIdParamSchema),
+  validate(productIdParamZodSchema),
   archiveProduct
 );
 
@@ -103,14 +110,14 @@ router.post(
   "/:productId/tags",
   authenticate,
   assertProductOwnership,
-  validate(attachTagBodySchema),
+  validate(attachTagBodyZodSchema),
   attachTagToProduct
 );
 router.post(
   "/:productId/tags/bulk",
   authenticate,
   assertProductOwnership,
-  validate(attachTagsBulkBodySchema),
+  validate(attachTagsBulkBodyZodSchema),
   attachTagsToProductBulk
 );
 router.delete(

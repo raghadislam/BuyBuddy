@@ -6,7 +6,13 @@ import { sendResponse, sendCookie } from "../../utils/response";
 import { HttpStatus } from "../../enums/httpStatus.enum";
 
 export const updateBrandProfile: RequestHandler = async (req, res) => {
-  const payload: UpdateBrandProfile = req.body;
+  const payload: UpdateBrandProfile = { ...req.body };
+
+  if ((req as any).uploadedLogo) {
+    payload.logo = (req as any).uploadedLogo.url;
+    payload.photoPublicId = (req as any).uploadedLogo.public_id;
+  }
+
   const brand = await brandService.updateBrandProfile(
     req.account?.id!,
     payload

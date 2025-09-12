@@ -48,12 +48,6 @@ export const assertReviewOwnership: RequestHandler = async (
 ) => {
   const { reviewId } = req.params;
   const account = (req as any).account;
-  console.log(account);
-
-  if (!account)
-    return res
-      .status(HttpStatus.Unauthorized)
-      .json({ message: "You Have to login to do this action." });
 
   if (account.role === "ADMIN") {
     return next();

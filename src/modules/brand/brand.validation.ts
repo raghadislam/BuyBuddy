@@ -65,5 +65,6 @@ export const updateBrandProfileZodSchema = z.object({
         )
         .optional(),
     })
-    .strict(),
+    .strict()
+    .default({}),
 });

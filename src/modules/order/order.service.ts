@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.config";
+import { HttpStatus } from "../../enums/httpStatus.enum";
+import APIError from "../../utils/APIError";
 import {
   Prisma,
   Currency,
@@ -7,11 +9,7 @@ import {
   PaymentMethod,
   ShipmentStatus,
 } from "@prisma/client";
-import { HttpStatus } from "../../enums/httpStatus.enum";
-import APIError from "../../utils/APIError";
-import { moneySum } from "../../utils/order.utils";
-
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+import { round2 } from "../../utils/math.utilites";
 
 type CartWithLines = Awaited<ReturnType<OrderService["getCartForCheckout"]>>;
 
@@ -67,18 +65,11 @@ class OrderService {
     return 40;
   }
 
-  // TODO: set later
-  private async calcTax(subTotalMinusDiscount: number): Promise<number> {
-    const rate = 0.0; // 0.14 for 14% VAT
-    return +(subTotalMinusDiscount * rate).toFixed(2);
-  }
-
   async checkout(
     userId: string,
     currency: Currency,
     addressId: string,
-    promoCode: string,
-    paymentMethod: PaymentMethod
+    promoCode?: string
   ) {
     const cart = await this.getCartForCheckout(userId);
     const groups = this.groupByBrand(cart);
@@ -105,7 +96,7 @@ class OrderService {
           itemsTotal: 0,
           discountTotal: 0,
           shippingTotal: 0,
-          currency: currency,
+          currency,
           paymentStatus: PaymentStatus.PENDING,
           status: OrderStatus.DRAFT,
           placedAt: new Date(),
@@ -124,6 +115,7 @@ class OrderService {
             0
           )
         );
+        // TODO: make promoCodes model
         const discount = await this.applyPromo(promoCode, itemsSubtotal);
         const shippingFee = await this.calcShippingFee(
           group.brandId,
@@ -175,15 +167,12 @@ class OrderService {
         include: { subOrders: { include: { items: true } } },
       });
 
-      // clear cart
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
-      // 6) create pending payment with computed amount
+      // create pending payment with computed amount
       const amount = round2(itemsTotal - discountTotal + shippingTotal);
       await tx.payment.create({
         data: {
           orderId: order.id,
-          provider: paymentMethod,
+          provider: PaymentMethod.CASH_ON_DELIVERY, // default, change when paying
           status: PaymentStatus.PENDING,
           amount,
           currency,
@@ -208,6 +197,11 @@ class OrderService {
         order.itemsTotal - order.discountTotal + order.shippingTotal
       );
 
+      await tx.payment.updateMany({
+        where: { orderId, status: PaymentStatus.PENDING },
+        data: { status: PaymentStatus.CANCELED },
+      });
+
       await tx.payment.create({
         data: {
           orderId,
@@ -218,6 +212,11 @@ class OrderService {
           currency: order.currency,
         },
       });
+
+      const cart = await tx.cart.findUnique({
+        where: { userId: order.userId },
+      });
+      await tx.cartItem.deleteMany({ where: { cartId: cart?.id } });
 
       const updated = await tx.order.update({
         where: { id: orderId },
@@ -250,7 +249,10 @@ class OrderService {
         order.status === OrderStatus.FULFILLED ||
         order.status === OrderStatus.REFUNDED
       )
-        return order;
+        throw new APIError(
+          `Can't cancel! Orderd status is ${order.status}`,
+          HttpStatus.Conflict
+        );
 
       const moving = order.subOrders.some((so) =>
         so.shipments.some(
@@ -319,7 +321,80 @@ class OrderService {
       payTotal: round2(o.itemsTotal - o.discountTotal + o.shippingTotal),
     }));
   }
-  // TODO: addd a function to update shipment status per sub order and order
+
+  async confirmRefund(
+    userId: string,
+    orderId: string,
+    provider: PaymentMethod,
+    reason?: string
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId, userId },
+        include: {
+          subOrders: { include: { items: true, shipments: true } },
+          payments: true,
+        },
+      });
+
+      if (!order) throw new APIError("Order not found", HttpStatus.NotFound);
+
+      if (order.status === OrderStatus.REFUNDED) {
+        return order;
+      }
+      if (order.paymentStatus !== PaymentStatus.SUCCEEDED) {
+        throw new APIError(
+          "Order not paid yet; cannot refund",
+          HttpStatus.Conflict
+        );
+      }
+
+      const anyDelivered = order.subOrders.some((so) =>
+        so.shipments.some((s) => s.status === ShipmentStatus.DELIVERED)
+      );
+      if (anyDelivered) {
+        throw new APIError(
+          "At least one shipment delivered; use return flow instead of refund.",
+          HttpStatus.Conflict
+        );
+      }
+
+      // Create refund payment record
+      const refundAmount = round2(
+        order.itemsTotal - order.discountTotal + order.shippingTotal
+      );
+      await tx.payment.create({
+        data: {
+          orderId,
+          provider,
+          status: PaymentStatus.REFUNDED,
+          amount: refundAmount,
+          currency: order.currency,
+          note: reason,
+        } as Prisma.PaymentUncheckedCreateInput,
+      });
+
+      // Restock
+      for (const so of order.subOrders) {
+        for (const it of so.items) {
+          await tx.variant.update({
+            where: { id: it.variantId },
+            data: { stock: { increment: it.qty } },
+          });
+        }
+      }
+
+      const updated = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.REFUNDED,
+          paymentStatus: PaymentStatus.REFUNDED,
+        },
+      });
+
+      return updated;
+    });
+  }
 }
 
 export default new OrderService();

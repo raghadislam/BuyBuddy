@@ -232,16 +232,17 @@ model User {
 }
 
 model Address {
-  id          String   @id @default(uuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  government  String?
-  city        String?
-  addressLine String?
-  landmark    String?
-  isPrimary   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String          @id @default(uuid())
+  user          User            @relation(fields: [userId], references: [id])
+  userId        String
+  government    String?
+  city          String?
+  addressLine   String?
+  landmark      String?
+  isPrimary     Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  ShipmentEvent ShipmentEvent[]
 
   @@index([userId])
 }
@@ -251,7 +252,8 @@ model Brand {
   accountId       String          @unique
   account         Account         @relation(fields: [accountId], references: [id])
   description     String?
-  logo            String?
+  logo            String?         @default("https://res.cloudinary.com/dbmr1movf/image/upload/v1757365829/default_j4wib4.jpg")
+  photoPublicId   String?
   categories      Category[]
   status          BrandStatus     @default(DRAFT)
   instagramUrl    String?
@@ -752,6 +754,7 @@ model ShipmentEvent {
   shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   occurredAt DateTime
   status     ShipmentStatus
-  location   String?
+  addressId  String?
+  address    Address?       @relation(fields: [addressId], references: [id], onDelete: SetNull)
   note       String?
 }
