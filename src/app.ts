@@ -21,6 +21,7 @@ import { cleanResponseMiddleware } from "./middlewares/cleanResponse.middleware"
 import setupSockets from "./services/socket/socket.setup";
 import env from "./config/env.config";
 import arena from "./jobs/arena";
+import "./jobs";
 
 const app = express();
 const server = createServer(app);

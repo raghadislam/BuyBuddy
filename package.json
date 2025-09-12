@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc --build && cp -r src/services/email/templates/*.hbs dist/services/email/templates",
-    "start": "npx concurrently \"node ./dist/server.js\" \"node ./dist/jobs/index.js\"",
-    "dev": "npx concurrently \"nodemon ./src/server.ts\" \"nodemon ./src/jobs/index.ts\""
+    "start": "node ./dist/server.js",
+    "dev": "nodemon ./src/server.ts"
   },
   "author": "",
   "license": "ISC",
@@ -36,7 +36,6 @@
     "bull-arena": "^4.6.0",
     "bullmq": "^5.58.5",
     "cloudinary": "^2.7.0",
-    "concurrently": "^9.2.1",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.1",
