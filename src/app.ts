@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import cors from "cors";
+import { rateLimit } from "express-rate-limit";
 
 import authRouter from "./modules/auth/auth.routes";
 import userRouter from "./modules/user/user.routes";
@@ -23,6 +24,15 @@ import env from "./config/env.config";
 import arena from "./jobs/arena";
 import "./jobs";
 
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 400,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: "You reached your limit, Please try again later.",
+  validate: { xForwardedForHeader: false },
+});
+
 const app = express();
 const server = createServer(app);
 
@@ -37,15 +47,29 @@ setupSockets(io);
 
 app.use("/", arena);
 
+// CORS configuration
+app.use(
+  cors({
+    origin: env.NODE_ENV === "production" ? env.ALLOWED_ORIGINS : "*",
+    credentials: true,
+  })
+);
+
+// Rate Limiting
+app.use(limiter);
+
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(cleanResponseMiddleware());
 
+// Health check endpoint
 app.use("/health", (req, res) => {
   res.status(200).send("OK");
 });
+
+// API Routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/brands", brandRouter);
