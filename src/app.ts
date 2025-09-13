@@ -49,10 +49,23 @@ setupSockets(io);
 app.use("/", arena);
 
 // CORS configuration
+// app.use(
+//   cors({
+//     origin: env.NODE_ENV === "production" ? env.ALLOWED_ORIGINS : "*",
+//     credentials: true,
+//   })
+// );
+
 app.use(
   cors({
-    origin: env.NODE_ENV === "production" ? env.ALLOWED_ORIGINS : "*",
+    origin(origin, cb) {
+      if (!origin || env.ALLOWED_ORIGINS.includes(origin))
+        return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
