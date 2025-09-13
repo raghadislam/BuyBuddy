@@ -255,7 +255,7 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
           accountId,
         };
 
-        const result = messageService.markMessageRead({
+        const result = await messageService.markMessageRead({
           ...rawPayload,
           accountId,
         });
