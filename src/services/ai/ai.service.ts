@@ -7,33 +7,21 @@ import logger from "../../config/logger.config";
 
 class AIService {
   private readonly apiUrl = env.AI_SEARCH_API_URL;
-  private readonly apiKey = env.AI_SEARCH_API_KEY;
 
   async searchByText(payload: AITextSearchPayload): Promise<string[]> {
     try {
-      // Work in progress: Mock response for now
-      return [
-        "843e7a0c-8831-4395-98bc-dfc030c68d56",
-        "8b50cdc8-4083-4356-9757-6f5a1e4f2a86",
-      ];
+      const { query } = payload;
+      const formData = new FormData();
+      formData.append("query", query);
 
-      //   const { query } = payload;
-      //   const formData = new FormData();
-      // formData.append("query", query);
-      //   const response = await axios.post<AISearchResponse>(
-      //     `${this.apiUrl}/search/text`,
-      //     {
-      //       query,
-      //     },
-      //     {
-      //       headers: {
-      //         Authorization: `Bearer ${this.apiKey}`,
-      //         "Content-Type": "application/form-data",
-      //       },
-      //       timeout: 30000,
-      //     }
-      //   );
-      //   return response.data.productIds || [];
+      const response = await axios.post(
+        `${this.apiUrl}/search-text`,
+        formData,
+        {
+          timeout: 30000,
+        }
+      );
+      return response.data.productIds || [];
     } catch (error) {
       logger.error("AI text search error:", error);
       throw new APIError(
@@ -45,28 +33,18 @@ class AIService {
 
   async searchByImage(payload: AIImageSearchPayload): Promise<string[]> {
     try {
-      // Work in progress: Mock response for now
-      return [
-        "843e7a0c-8831-4395-98bc-dfc030c68d56",
-        "8b50cdc8-4083-4356-9757-6f5a1e4f2a86",
-      ];
+      const { image } = payload;
+      const formData = new FormData();
+      formData.append("file", image);
 
-      //   const { image } = payload;
-      //   const formData = new FormData();
-      //   formData.append("file", image);
-      //     const response = await axios.post<AISearchResponse>(
-      //       `${this.apiUrl}/search/image`,
-      //       formData,
-      //       {
-      //         headers: {
-      //           Authorization: `Bearer ${this.apiKey}`,
-      //           "Content-Type": "multipart/form-data",
-      //         },
-      //         timeout: 60000,
-      //       }
-      //     );
-
-      //   return response.data.productIds || [];
+      const response = await axios.post(
+        `${this.apiUrl}/search-image`,
+        formData,
+        {
+          timeout: 60000,
+        }
+      );
+      return response.data.productIds || [];
     } catch (error) {
       console.error("AI image search error:", error);
       throw new APIError(

@@ -55,10 +55,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.sendMessage(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_SENT,
-        result
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_SENT, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -94,10 +93,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.reactToMessage(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(data.conversationId)).emit(
-        EVENTS.MESSAGE_REACTED,
-        result
-      );
+      socket
+        .to(conversationRoomName(data.conversationId))
+        .emit(EVENTS.MESSAGE_REACTED, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -129,13 +127,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.markMessageRead(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_READ,
-        {
-          accountId,
-          messageId: payload.messageId,
-        }
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_READ, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -167,12 +161,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.deleteMessageForMe(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_DELETED_FOR_ME,
-        {
-          messageId: payload.messageId,
-        }
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_DELETED_FOR_ME, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -204,12 +195,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.deleteMessageForAll(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_DELETED_FOR_ALL,
-        {
-          messageId: payload.messageId,
-        }
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_DELETED_FOR_ALL, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
