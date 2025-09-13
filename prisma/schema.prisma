@@ -386,8 +386,6 @@ model Product {
   tags     ProductTag[]
   reviews  Review[]
 
-  imageVectors ProductImageEmbedding[]
-
   @@unique([brandId, slug])
   @@index([category, status, createdAt(sort: Desc)])
   @@index([material])
@@ -402,8 +400,7 @@ model ProductImage {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  product   Product                @relation(fields: [productId], references: [id])
-  embedding ProductImageEmbedding?
+  product Product @relation(fields: [productId], references: [id])
 
   @@unique([productId, sortOrder])
   @@index([productId])
@@ -515,22 +512,6 @@ model ProductTag {
 
   @@id([productId, tagId])
   @@index([tagId, productId])
-}
-
-model ProductImageEmbedding {
-  id             String                @id @default(uuid())
-  productImageId String                @unique
-  productId      String // denorm for filtering
-  model          String
-  dim            Int
-  vector         Unsupported("vector")
-  updatedAt      DateTime              @updatedAt
-
-  image   ProductImage @relation(fields: [productImageId], references: [id], onDelete: Cascade)
-  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  // @@index([model, dim])
-
-  @@index([productId])
 }
 
 model Review {

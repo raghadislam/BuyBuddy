@@ -16,6 +16,7 @@ import {
   DeleteForMePayload,
   DeleteForAllPayload,
   SearchMessagesPayload,
+  MarkAllMessagesDeliveredPayload,
 } from "./message.type";
 import {
   sendSchema,
@@ -55,10 +56,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.sendMessage(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_SENT,
-        result
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_SENT, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -94,10 +94,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.reactToMessage(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(data.conversationId)).emit(
-        EVENTS.MESSAGE_REACTED,
-        result
-      );
+      socket
+        .to(conversationRoomName(data.conversationId))
+        .emit(EVENTS.MESSAGE_REACTED, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -129,13 +128,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.markMessageRead(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_READ,
-        {
-          accountId,
-          messageId: payload.messageId,
-        }
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_READ, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -167,12 +162,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.deleteMessageForMe(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_DELETED_FOR_ME,
-        {
-          messageId: payload.messageId,
-        }
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_DELETED_FOR_ME, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -204,12 +196,9 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       const result = await messageService.deleteMessageForAll(payload);
 
       await joinConversationRoom(socket, data.conversationId);
-      io.to(conversationRoomName(payload.conversationId)).emit(
-        EVENTS.MESSAGE_DELETED_FOR_ALL,
-        {
-          messageId: payload.messageId,
-        }
-      );
+      socket
+        .to(conversationRoomName(payload.conversationId))
+        .emit(EVENTS.MESSAGE_DELETED_FOR_ALL, result);
 
       ack({ status: "ok", data: result });
     } catch (err: any) {
@@ -257,4 +246,40 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       ack({ status: "error", message: err?.message ?? "Failed to search" });
     }
   });
+
+  socket.on(
+    EVENTS.MESSAGE_MARK_DELIVERED,
+    async (rawPayload: { conversationId: string; messageId: string }, ack) => {
+      try {
+        const payload: MarkAllMessagesDeliveredPayload = {
+          accountId,
+        };
+
+        const result = await messageService.markMessageRead({
+          ...rawPayload,
+          accountId,
+        });
+        await messageService.markAllMessagesDelivered(payload);
+
+        // Emit to all connected devices of this account
+        socket
+          .to(conversationRoomName(rawPayload.conversationId))
+          .emit(EVENTS.MESSAGE_DELIVERED, {
+            result,
+          });
+
+        ack({ status: "ok", data: result });
+      } catch (err: any) {
+        logger.error("message:markAllDelivered failed", {
+          err,
+          accountId,
+          payload: rawPayload,
+        });
+        ack({
+          status: "error",
+          message: err?.message ?? "Failed to mark all delivered",
+        });
+      }
+    }
+  );
 }
