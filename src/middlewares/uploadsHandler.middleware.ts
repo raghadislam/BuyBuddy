@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import AppError from "../utils/APIError";
 import Uploader from "../utils/cloudinary";
 import Logger from "../config/logger.config";
+import { HttpStatus } from "../enums/httpStatus.enum";
 
 interface CloudinaryUploadResult {
   secure_url: string;
@@ -97,4 +98,23 @@ export const handleLogoUpload = async (
     Logger.error(err);
     next(new AppError("Failed to upload logo to Cloudinary", 500));
   }
+};
+
+export const handleImageUpload = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const files = (req as any).files as
+    | { image?: Express.Multer.File[] }
+    | undefined;
+
+  if (!files?.image?.[0]) {
+    throw new AppError("Image file is required", HttpStatus.BadRequest);
+  }
+
+  const file = files.image[0];
+
+  req.image = file;
+  next();
 };

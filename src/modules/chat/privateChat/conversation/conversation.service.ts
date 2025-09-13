@@ -10,6 +10,7 @@ import {
   ArchivePrivateConversation,
   UnarchivePrivateConversation,
   MarkReadPayload,
+  GetArchivedConversationsPayload,
 } from "./conversation.type";
 import { Role, Status } from "@prisma/client";
 import { chatParticipantSelect } from "../../../auth/auth.select";
@@ -323,9 +324,26 @@ class PrivateConverstionService {
       },
     });
 
+    // Sort conversations by their last message createdAt (most recent first)
+    const sortedConversations = conversations.sort((a, b) => {
+      const aLastMessage = a.messages?.[0];
+      const bLastMessage = b.messages?.[0];
+
+      // Conversations without messages go to the bottom
+      if (!aLastMessage && !bLastMessage) return 0;
+      if (!aLastMessage) return 1;
+      if (!bLastMessage) return -1;
+
+      // Sort by message createdAt (newest first)
+      return (
+        new Date(bLastMessage.createdAt).getTime() -
+        new Date(aLastMessage.createdAt).getTime()
+      );
+    });
+
     logger.info(`Found private conversations for accountId: ${accountId}`);
     return this.formatConversationsList(
-      conversations as PrivateConversation[],
+      sortedConversations as PrivateConversation[],
       accountId
     );
   }
@@ -478,6 +496,67 @@ class PrivateConverstionService {
       );
       return { marked, unreadCount: newUnread };
     });
+  }
+
+  async getArchivedConversations(payload: GetArchivedConversationsPayload) {
+    const { accountId } = payload;
+    const conversations = await prisma.privateConversation.findMany({
+      where: {
+        participants: { some: { accountId: accountId } },
+        archivedAt: { not: null },
+      },
+      include: {
+        participants: {
+          include: {
+            account: chatParticipantSelect,
+          },
+        },
+        messages: {
+          where: {
+            visibilities: {
+              some: {
+                accountId: accountId,
+                deletedAt: null,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: {
+            visibilities: {
+              where: { accountId: accountId },
+              take: 1,
+            },
+            reactedBy: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+    });
+
+    // Sort conversations by their last message createdAt (most recent first)
+    const sortedConversations = conversations.sort((a, b) => {
+      const aLastMessage = a.messages?.[0];
+      const bLastMessage = b.messages?.[0];
+
+      // Conversations without messages go to the bottom
+      if (!aLastMessage && !bLastMessage) return 0;
+      if (!aLastMessage) return 1;
+      if (!bLastMessage) return -1;
+
+      // Sort by message createdAt (newest first)
+      return (
+        new Date(bLastMessage.createdAt).getTime() -
+        new Date(aLastMessage.createdAt).getTime()
+      );
+    });
+
+    logger.info(
+      `Found archived private conversations for accountId: ${accountId}`
+    );
+    return this.formatConversationsList(
+      sortedConversations as PrivateConversation[],
+      accountId
+    );
   }
 }
 

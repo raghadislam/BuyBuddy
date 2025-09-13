@@ -88,5 +88,18 @@ export default z
     FB_CLIENT_EMAIL: z.string().min(1, "FB_CLIENT_EMAIL is required"),
 
     REDIS_QUEUE_URL: z.string().min(1, "REDIS_QUEUE_URL is required"),
+
+    ALLOWED_ORIGINS: z
+      .string()
+      .transform((val) => {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return val.split(",").map((s) => s.trim());
+        }
+      })
+      .pipe(z.array(z.string().url("Each ALLOWED_ORIGIN must be a valid URL"))),
+
+    AI_SEARCH_API_URL: z.string().url(),
   })
   .parse(process.env);

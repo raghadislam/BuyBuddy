@@ -45,3 +45,5 @@ export type MarkReadPayload = {
   conversationId: string;
   upToMessageId?: string;
 };
+
+export type GetArchivedConversationsPayload = GetAllPrivateConversationsPayload;
