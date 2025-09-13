@@ -318,7 +318,7 @@ class PrivateMessage {
       logger.info(
         `Marked message ${messageId} of private conversation ${conversationId} as read for account ${accountId}`
       );
-      return { marked, unreadCount: newUnread };
+      return { marked, unreadCount: newUnread, messageId };
     });
   }
 
