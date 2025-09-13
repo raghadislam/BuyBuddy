@@ -16,6 +16,7 @@ import {
   DeleteForMePayload,
   DeleteForAllPayload,
   SearchMessagesPayload,
+  MarkAllMessagesDeliveredPayload,
 } from "./message.type";
 import {
   sendSchema,
@@ -245,4 +246,40 @@ export default function messageGateway(io: Server, socket: CustomSocket) {
       ack({ status: "error", message: err?.message ?? "Failed to search" });
     }
   });
+
+  socket.on(
+    EVENTS.MESSAGE_MARK_DELIVERED,
+    async (rawPayload: { conversationId: string; messageId: string }, ack) => {
+      try {
+        const payload: MarkAllMessagesDeliveredPayload = {
+          accountId,
+        };
+
+        const result = messageService.markMessageRead({
+          ...rawPayload,
+          accountId,
+        });
+        await messageService.markAllMessagesDelivered(payload);
+
+        // Emit to all connected devices of this account
+        socket
+          .to(conversationRoomName(rawPayload.conversationId))
+          .emit(EVENTS.MESSAGE_DELIVERED, {
+            result,
+          });
+
+        ack({ status: "ok", data: result });
+      } catch (err: any) {
+        logger.error("message:markAllDelivered failed", {
+          err,
+          accountId,
+          payload: rawPayload,
+        });
+        ack({
+          status: "error",
+          message: err?.message ?? "Failed to mark all delivered",
+        });
+      }
+    }
+  );
 }

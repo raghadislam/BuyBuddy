@@ -715,7 +715,10 @@ class PrivateMessage {
       `Marked ${result.count} messages as delivered for account ${accountId}`
     );
 
-    return { updatedCount: result.count, deliveredAt: now };
+    return {
+      updatedCount: result.count,
+      deliveredAt: now,
+    };
   }
 }
 
