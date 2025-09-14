@@ -177,6 +177,7 @@ Registered routers in `src/app.ts`:
 - **Chats** → `/api/v1/chats` (real-time messaging)
 - **Notifications** → `/api/v1/notifications`
 - **Firebase FCM** → `/api/v1/fcm` (push notifications)
+- **Search** → `/api/v1/search` (Ai search (image or text))
 
 ---
 
