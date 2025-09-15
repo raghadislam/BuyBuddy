@@ -35,7 +35,7 @@ class AIService {
     try {
       const { image } = payload;
       const formData = new FormData();
-      formData.append("file", image);
+      formData.append("file", image.buffer, image.originalname);
 
       const response = await axios.post(
         `${this.apiUrl}/search-image`,
