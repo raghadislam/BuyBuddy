@@ -103,6 +103,13 @@ Below are the main flows implemented end-to-end in the backend. They can be exte
 ├── README.md
 └── tsconfig.json           # TypeScript compiler configuration
 ```
+---
+
+## System Design
+
+![level 1](assets/system_design_1.jpeg?raw=true "system_design_1")
+![level 2](assets/system_design_2.jpeg?raw=true "system_design_2")
+![level 3](assets/system_design_3.jpeg?raw=true "system_design_3")
 
 ---
 
@@ -122,7 +129,7 @@ Below are the main flows implemented end-to-end in the backend. They can be exte
 #### 1️⃣ Clone the repo
 
 ```sh
-git clone https://github.com/SamerYaserr/BuyBuddy.git
+git clone https://github.com/raghadislam/BuyBuddy.git
 cd BuyBuddy
 ```
 
